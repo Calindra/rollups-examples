@@ -1037,21 +1037,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "echo-backend"
-version = "0.3.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "hex",
- "hyper",
- "json",
- "solana-program",
- "solana-program-test",
- "solana-sdk",
- "tokio",
-]
-
-[[package]]
 name = "ed25519"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3941,6 +3926,23 @@ dependencies = [
  "scroll",
  "thiserror",
  "time 0.1.44",
+]
+
+[[package]]
+name = "solzen"
+version = "0.3.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "hex",
+ "hyper",
+ "json",
+ "sha2 0.10.5",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+ "spl-associated-token-account",
+ "tokio",
 ]
 
 [[package]]
