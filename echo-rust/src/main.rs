@@ -53,7 +53,9 @@ pub async fn handle_advance(
         .as_str()
         .ok_or("Missing payload")?;
     println!("Adding notice");
-    let notice = object! {"payload" => format!("{}", payload)};
+    let notice = object! {
+        payload: format!("0x{}", hex::encode("ola mundo"))
+    };
     let req = hyper::Request::builder()
         .method(hyper::Method::POST)
         .header(hyper::header::CONTENT_TYPE, "application/json")
