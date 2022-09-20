@@ -96,6 +96,7 @@ pub async fn handle_advance(
         .as_str()
         .ok_or("Missing payload")?;
     println!("Adding notice");
+    call_smart_contract(&payload);
     let notice = object! {"payload" => format!("{}", payload)};
     let req = hyper::Request::builder()
         .method(hyper::Method::POST)
