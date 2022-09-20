@@ -3,6 +3,7 @@ use ctsi_sol::AccountManager;
 
 use anchor_lang::prelude::{Pubkey, AccountInfo};
 use json::{object, JsonValue};
+pub mod transaction;
 
 async fn print_response<T: hyper::body::HttpBody>(
     response: hyper::Response<T>,
@@ -49,7 +50,7 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
 pub fn call_smart_contract(payload: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(encoded64).unwrap();
-    let tx: solana_sdk::transaction::Transaction = bincode::deserialize(&decoded).unwrap();
+    let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
 
     let program_id = solana_smart_contract::ID;
     let first = &tx.message.instructions[0];
@@ -80,7 +81,7 @@ pub fn call_smart_contract(payload: &str) {
         ordered_accounts.push(accounts[i].to_owned());
     }
     for acc in ordered_accounts.iter() {
-        println!("ordered_accounts = {:?}", acc.key);
+        println!("- ordered_accounts = {:?}", acc.key);
     }
     solana_smart_contract::entry(&program_id, &ordered_accounts, &first.data).unwrap();
 }
