@@ -37,4 +37,6 @@ fn it_should_write_an_account_by_public_key() {
     };
     let account_manager = create_account_manager(false);
     account_manager.write_account(&pubkey, &account_file_data).unwrap();
+    let account_data = account_manager.read_account(&pubkey).unwrap();
+    assert_eq!(account_data.lamports, 123u64);
 }
