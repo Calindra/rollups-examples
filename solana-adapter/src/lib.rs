@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell, str::FromStr};
-use ctsi_sol::AccountManager;
+use ctsi_sol::{AccountManager, AccountFileData};
 
-use anchor_lang::prelude::{Pubkey, AccountInfo};
+use anchor_lang::{prelude::{Pubkey, AccountInfo}};
 use json::{object, JsonValue};
 pub mod transaction;
 
@@ -22,9 +22,14 @@ where
     Ok(())
 }
 
-fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
+fn create_account_manager() -> AccountManager {
     let mut account_manager = AccountManager::new().unwrap();
-    account_manager.set_base_path("tests/fixtures".to_owned());
+    account_manager.set_base_path("../solana-data".to_owned());
+    return account_manager;
+}
+
+fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
+    let account_manager = create_account_manager();
     const MAX_SIZE: usize = 2000;
     let lamports = 1000;
     let read_account_data_file = account_manager.read_account(&pubkey);
@@ -84,6 +89,18 @@ pub fn call_smart_contract(payload: &str) {
         println!("- ordered_accounts = {:?}", acc.key);
     }
     solana_smart_contract::entry(&program_id, &ordered_accounts, &first.data).unwrap();
+    let account_manager = create_account_manager();
+    for acc in ordered_accounts.iter() {
+        println!("- saving = {:?}", acc.key);
+        let data = acc.data.borrow_mut();
+        let lamports: u64 = **acc.lamports.borrow_mut();
+        let account_file_data = AccountFileData {
+            owner: acc.owner.to_owned(),
+            data: data.to_vec(),
+            lamports: lamports,
+        };
+        account_manager.write_account(&acc.key, &account_file_data).unwrap();
+    }
 }
 
 pub async fn handle_advance(
