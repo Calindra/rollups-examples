@@ -24,7 +24,7 @@ where
 
 fn create_account_manager() -> AccountManager {
     let mut account_manager = AccountManager::new().unwrap();
-    account_manager.set_base_path("../solana-data".to_owned());
+    account_manager.set_base_path("./".to_owned());
     return account_manager;
 }
 
