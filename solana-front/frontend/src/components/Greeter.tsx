@@ -1,6 +1,4 @@
 import { useWeb3React } from '@web3-react/core';
-import { JsonRpcProvider } from "@ethersproject/providers";
-
 import { Contract, ethers, Signer } from 'ethers';
 import {
   ChangeEvent,
@@ -11,6 +9,7 @@ import {
 } from 'react';
 import styled from 'styled-components';
 import GreeterArtifact from '../artifacts/contracts/Greeter.sol/Greeter.json';
+import { testSecp } from '../solana/adapter';
 import { cartesiRollups } from '../utils/cartesi';
 import { Provider } from '../utils/provider';
 import { SectionDivider } from './SectionDivider';
@@ -61,7 +60,9 @@ export function Greeter(): ReactElement {
   const [greetingInput, setGreetingInput] = useState<string>('');
 
   async function sendInputToCartesiRollups() {
+    await testSecp();
     if (!signer) {
+      console.log('Signer is missing');
       return;
     }
     try {

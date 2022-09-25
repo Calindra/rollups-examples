@@ -31,6 +31,7 @@
     "ethers": "^5.0.0",
     "hardhat": "^2.8.0",
     "hardhat-gas-reporter": "^1.0.4",
+    "nodemon": "^2.0.20",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.6",
@@ -42,6 +43,7 @@
   "scripts": {
     "lint": "",
     "lint:fix": "",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx hardhat test",
+    "test:watch": "nodemon -e sol,ts --watch test --watch contracts --exec 'npx hardhat test'"
   }
 }
