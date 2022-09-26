@@ -1,4 +1,4 @@
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import { clusterApiUrl, ConfirmOptions, Connection, Keypair, PublicKey, Signer, Transaction, TransactionSignature } from "@solana/web3.js";
 import * as anchor from "@project-serum/anchor";
 import idl from './models/solzen.json';
 import { AnchorProvider, Program } from "@project-serum/anchor";
@@ -16,10 +16,10 @@ export async function findDaoAddress(daoSlug: string) {
     ], programID)
 }
 
-export async function findValidationAddress(daoPubkey: PublicKey) {
+export async function findValidationAddress(daoPubkey: PublicKey, walletPublicKey: PublicKey) {
     return await PublicKey.findProgramAddress([
         anchor.utils.bytes.utf8.encode('child'),
-        // wallet.publicKey.toBuffer(),
+        walletPublicKey.toBuffer(),
         daoPubkey.toBuffer(),
     ], programID);
 }
@@ -45,23 +45,42 @@ export async function testSecp() {
 }
 
 class AdaptedWallet implements Wallet {
-    signTransaction(tx: anchor.web3.Transaction): Promise<anchor.web3.Transaction> {
-        throw new Error("Method not implemented.");
+    private _publicKey: PublicKey = Keypair.generate().publicKey;
+
+    async signTransaction(tx: anchor.web3.Transaction): Promise<anchor.web3.Transaction> {
+        // const buffer = tx.serialize()
+        // console.log(buffer)
+        const msg = tx.compileMessage()
+        // console.log(msg)
+        console.log(msg.accountKeys.map(k => k.toBase58()))
+        return tx;
     }
+
     signAllTransactions(txs: anchor.web3.Transaction[]): Promise<anchor.web3.Transaction[]> {
         throw new Error("Method not implemented.");
     }
+
     get publicKey(): PublicKey {
-        throw new Error("Method not implemented.");
+        return this._publicKey;
+    }
+
+    set publicKey(pk) {
+        this._publicKey = pk
     }
 }
 
 export function getProvider() {
     const commitment = 'processed';
-    const network = clusterApiUrl('devnet')
+    const network = clusterApiUrl('devnet');
     const connection = new Connection(network, commitment)
     const wallet = new AdaptedWallet();
     const provider = new AnchorProvider(connection, wallet, { commitment });
+    provider.sendAndConfirm = async (tx: Transaction,
+        signers?: Signer[],
+        opts?: ConfirmOptions
+    ): Promise<TransactionSignature> => {
+        return {} as any
+    }
     return provider;
 }
 
