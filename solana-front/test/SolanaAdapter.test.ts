@@ -9,7 +9,7 @@ import Factory from './Factory';
 describe.only('SolanaAdapter', () => {
 
     it('should run', async () => {
-        const daoSlug = 'the-dao'
+        const daoSlug = 'slug'
         const { mint, payer } = await Factory.createMint();
         const program = await getProgram()
         const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
@@ -25,14 +25,15 @@ describe.only('SolanaAdapter', () => {
         console.log(`dao = ${daoPubkey.toBase58()}`)
         console.log(`validation = ${userAccount.toBase58()}`)
         console.log(`programId = ${program.programId.toBase58()}`)
-        console.log(mint.toBase58())
-        console.log(payer.publicKey.toBase58())
-        await program.methods.initialize(mint, new anchor.BN(1000), daoSlug)
+        console.log(`mint = ${mint.toBase58()}`)
+        console.log(`payer = ${payer.publicKey.toBase58()}`)
+        const tx = await program.methods.initialize(mint, new anchor.BN(1000), daoSlug)
             .accounts({
                 zendao: daoPubkey,
                 validation: userAccount,
             })
             .rpc()
+        console.log({tx})
     })
 
 })
