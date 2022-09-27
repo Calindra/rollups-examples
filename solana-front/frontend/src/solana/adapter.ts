@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { clusterApiUrl, ConfirmOptions, Connection, Keypair, PublicKey, SerializeConfig, Signer, Transaction, TransactionSignature } from "@solana/web3.js";
+import { AccountInfo, clusterApiUrl, Commitment, ConfirmOptions, Connection, GetAccountInfoConfig, Keypair, PublicKey, SerializeConfig, Signer, Transaction, TransactionSignature } from "@solana/web3.js";
 import { Buffer } from 'buffer';
 import { ethers } from 'ethers';
 
@@ -139,12 +139,32 @@ class AnchorProviderAdapter extends AnchorProvider {
         }
         return { ok: 1 } as any
     }
+
+}
+
+class ConnectionAdapter extends Connection {
+    async  getAccountInfo(
+        publicKey: PublicKey,
+        _commitmentOrConfig?: Commitment | GetAccountInfoConfig,
+    ): Promise<AccountInfo<Buffer> | null> {
+        const resp = await fetch(`https://5005-calindra-rollupsexample-g0i8h7rqt13.ws-us67.gitpod.io/inspect/${publicKey.toBase58()}`);
+        const cartesiResponse = await resp.json()
+        const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload)
+        const infoData = JSON.parse(jsonString);
+        console.log({ [publicKey.toBase58()]:  infoData})
+        return {
+            owner: new PublicKey(infoData.owner),
+            data: Buffer.from(infoData.data, 'base64'),
+            executable: false, // pode ser que seja executavel
+            lamports: +infoData.lamports,
+        }
+    }
 }
 
 export function getProvider(signer?: ethers.Signer) {
     const commitment = 'processed';
     const network = clusterApiUrl('devnet');
-    const connection = new Connection(network, commitment)
+    const connection = new ConnectionAdapter(network, commitment);
     const wallet = new AdaptedWallet();
     const provider = new AnchorProviderAdapter(connection, wallet, { commitment });
     provider.etherSigner = signer;

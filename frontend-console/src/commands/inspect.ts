@@ -42,7 +42,10 @@ export const builder = (yargs: Argv) => {
 export const handler = async (args: Args) => {
     const { url, payload } = args;
 
-    const response = await fetch(path.join(url, payload));
+    const finalURL = path.join(url, payload);
+    console.log(`finalURL: ${finalURL}`);
+    const response = await fetch(finalURL);
+    console.log(`GITPOD_WORKSPACE_URL=${process.env.GITPOD_WORKSPACE_URL}`);
 
     console.log(`HTTP status: ${response.status}`);
     if (response.status == 200) {

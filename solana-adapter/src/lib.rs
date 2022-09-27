@@ -1,6 +1,6 @@
 use std::{rc::Rc, cell::RefCell, str::FromStr};
 use ctsi_sol::{AccountManager, AccountFileData};
-
+use serde::{Deserialize, Serialize};
 use anchor_lang::{prelude::{Pubkey, AccountInfo}};
 use json::{object, JsonValue};
 pub mod transaction;
@@ -24,8 +24,17 @@ where
 
 fn create_account_manager() -> AccountManager {
     let mut account_manager = AccountManager::new().unwrap();
-    account_manager.set_base_path("./".to_owned());
-    return account_manager;
+    let result = std::env::var("SOLANA_DATA_PATH");
+    match result {
+        Ok(path) => {
+            account_manager.set_base_path(path);
+            return account_manager;
+        },
+        Err(_) => {
+            account_manager.set_base_path("./".to_owned());
+            return account_manager;
+        },
+    };
 }
 
 fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
@@ -44,12 +53,32 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
         Err(_) => {
             let zeroes: [u8; MAX_SIZE] = [0; MAX_SIZE];
             let info_data = zeroes.to_vec();
-            
             let owner = Pubkey::from_str("2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv").unwrap();
             // let owner = Pubkey::default();
             return (info_data, lamports, owner);
         }
     };
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct AccountJson {
+    key: String,
+    owner: String,
+    data: String,
+    lamports: String,
+}
+
+pub fn read_account_info_as_json(pubkey_str: &str) -> String {
+    let pubkey = Pubkey::from_str(pubkey_str).unwrap();
+    let account_manager = create_account_manager();
+    let account_file_data = account_manager.read_account(&pubkey).unwrap();
+    let account_json = AccountJson {
+        key: pubkey_str.to_string(),
+        owner: Pubkey::from(account_file_data.owner).to_string(),
+        data: base64::encode(account_file_data.data),
+        lamports: account_file_data.lamports.to_string()
+    };
+    serde_json::to_string(&account_json).unwrap()
 }
 
 pub fn call_smart_contract(payload: &str) {
@@ -120,6 +149,34 @@ pub async fn handle_advance(
         .header(hyper::header::CONTENT_TYPE, "application/json")
         .uri(format!("{}/notice", server_addr))
         .body(hyper::Body::from(notice.dump()))?;
+    let response = client.request(req).await?;
+    print_response(response).await?;
+    Ok("accept")
+}
+
+pub async fn handle_inspect(
+    client: &hyper::Client<hyper::client::HttpConnector>,
+    server_addr: &str,
+    request: JsonValue,
+) -> Result<&'static str, Box<dyn std::error::Error>> {
+    println!("Received inspect request data {}", &request);
+    let payload = request["data"]["payload"]
+        .as_str()
+        .ok_or("Missing payload")?;
+    println!("Adding report");
+
+    // baby step: just read account info
+    let hex_decoded = hex::decode(&payload[2..]).unwrap();
+    let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
+    println!("read pubkey {}", pubkey_str);
+    let account_data = read_account_info_as_json(&pubkey_str);
+    let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
+
+    let req = hyper::Request::builder()
+        .method(hyper::Method::POST)
+        .header(hyper::header::CONTENT_TYPE, "application/json")
+        .uri(format!("{}/report", server_addr))
+        .body(hyper::Body::from(report.dump()))?;
     let response = client.request(req).await?;
     print_response(response).await?;
     Ok("accept")

@@ -1434,6 +1434,7 @@ dependencies = [
  "hyper",
  "json",
  "serde",
+ "serde_json",
  "sha2 0.10.6",
  "solana-program",
  "solana_smart_contract",

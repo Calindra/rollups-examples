@@ -13,23 +13,6 @@
 use json::{object, JsonValue};
 use std::env;
 
-async fn print_response<T: hyper::body::HttpBody>(
-    response: hyper::Response<T>,
-) -> Result<(), Box<dyn std::error::Error>>
-where
-    <T as hyper::body::HttpBody>::Error: 'static,
-    <T as hyper::body::HttpBody>::Error: std::error::Error,
-{
-    let response_status = response.status().as_u16();
-    let response_body = hyper::body::to_bytes(response).await?;
-    println!(
-        "Received notice status {} body {}",
-        response_status,
-        std::str::from_utf8(&response_body)?
-    );
-    Ok(())
-}
-
 fn process_initial(metadata: &JsonValue) -> Option<String> {
     let epoch_index = metadata["epoch_index"].as_u64()?;
     let input_index = metadata["input_index"].as_u64()?;
@@ -41,27 +24,6 @@ fn process_initial(metadata: &JsonValue) -> Option<String> {
     }
 
     return None;
-}
-
-pub async fn handle_inspect(
-    client: &hyper::Client<hyper::client::HttpConnector>,
-    server_addr: &str,
-    request: JsonValue,
-) -> Result<&'static str, Box<dyn std::error::Error>> {
-    println!("Received inspect request data {}", &request);
-    let payload = request["data"]["payload"]
-        .as_str()
-        .ok_or("Missing payload")?;
-    println!("Adding report");
-    let report = object! {"payload" => format!("{}", payload)};
-    let req = hyper::Request::builder()
-        .method(hyper::Method::POST)
-        .header(hyper::header::CONTENT_TYPE, "application/json")
-        .uri(format!("{}/report", server_addr))
-        .body(hyper::Body::from(report.dump()))?;
-    let response = client.request(req).await?;
-    print_response(response).await?;
-    Ok("accept")
 }
 
 #[tokio::main]
@@ -99,7 +61,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .ok_or("request_type is not a string")?;
             status = match request_type {
                 "advance_state" => solana_adapter::handle_advance(&client, &server_addr[..], req).await?,
-                "inspect_state" => handle_inspect(&client, &server_addr[..], req).await?,
+                "inspect_state" => solana_adapter::handle_inspect(&client, &server_addr[..], req).await?,
                 &_ => {
                     eprintln!("Unknown request type");
                     "reject"

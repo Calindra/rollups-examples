@@ -62,6 +62,7 @@ export function Greeter(): ReactElement {
   const [greeterContractAddr, setGreeterContractAddr] = useState<string>('');
   const [greeting, setGreeting] = useState<string>('');
   const [greetingInput, setGreetingInput] = useState<string>('');
+  const [daoAccount, setDaoAccount] = useState<string>('');
 
   async function sendInputToCartesiRollups() {
     if (!signer) {
@@ -69,14 +70,13 @@ export function Greeter(): ReactElement {
       return;
     }
     try {
-      const { inputContract } = await cartesiRollups(signer);
-      const signerAddress = await inputContract.signer.getAddress();
+      const signerAddress = await signer.getAddress();
       console.log(`using account "${signerAddress}"`);
 
       const daoSlug = 'slug'
-      const { program, wallet  } = await getProgram(signer)
+      const { program, wallet } = await getProgram(signer)
       const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
-      
+
       const [daoPubkey, _bump1] = await PublicKey.findProgramAddress([
         anchor.utils.bytes.utf8.encode('dao'),
         Buffer.from(daoSlug.slice(0, 32)),
@@ -102,6 +102,21 @@ export function Greeter(): ReactElement {
     } catch (e) {
       console.log('Error', e)
     }
+  }
+
+  async function readDataFromCartesiRollups() {
+    if (!signer) {
+      console.log('Signer is missing');
+      return;
+    }
+    const daoSlug = 'slug'
+    const { program } = await getProgram(signer)
+    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+      anchor.utils.bytes.utf8.encode('dao'),
+      Buffer.from(daoSlug.slice(0, 32)),
+    ], program.programId)
+    const daoAccount = await program.account.zendao.fetch(daoPubkey);
+    setDaoAccount(JSON.stringify(daoAccount, null, 4));
   }
 
   useEffect((): void => {
@@ -260,6 +275,12 @@ export function Greeter(): ReactElement {
         >
           Send Cartesi Input
         </StyledButton>
+        <StyledButton
+          onClick={readDataFromCartesiRollups}
+        >
+          Read Cartesi Data
+        </StyledButton>
+        <pre>{daoAccount}</pre>
       </StyledGreetingDiv>
     </>
   );
