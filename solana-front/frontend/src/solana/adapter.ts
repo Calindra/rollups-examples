@@ -143,15 +143,19 @@ class AnchorProviderAdapter extends AnchorProvider {
 }
 
 class ConnectionAdapter extends Connection {
-    async  getAccountInfo(
+    async getAccountInfo(
         publicKey: PublicKey,
         _commitmentOrConfig?: Commitment | GetAccountInfoConfig,
     ): Promise<AccountInfo<Buffer> | null> {
-        const resp = await fetch(`https://5005-calindra-rollupsexample-g0i8h7rqt13.ws-us67.gitpod.io/inspect/${publicKey.toBase58()}`);
+        const host = window.location.host;
+        const protocol = window.location.protocol;
+        const url = `${protocol}//${host.replace(/^[0-9]*/, '5005')}/inspect/${publicKey.toBase58()}`
+        console.log('Cartesi inspect url', url);
+        const resp = await fetch(url.toString());
         const cartesiResponse = await resp.json()
         const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload)
         const infoData = JSON.parse(jsonString);
-        console.log({ [publicKey.toBase58()]:  infoData})
+        console.log({ [publicKey.toBase58()]: infoData })
         return {
             owner: new PublicKey(infoData.owner),
             data: Buffer.from(infoData.data, 'base64'),
