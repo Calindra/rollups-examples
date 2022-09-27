@@ -4,7 +4,8 @@ import ReactDOM from 'react-dom';
 import { App } from './App';
 import './index.css';
 import { getProvider } from './utils/provider';
-
+import { Buffer } from 'buffer';
+window.Buffer = Buffer;
 ReactDOM.render(
   <React.StrictMode>
     <Web3ReactProvider getLibrary={getProvider}>

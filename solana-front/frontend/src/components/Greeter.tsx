@@ -1,5 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { PublicKey } from '@solana/web3.js';
 import { useWeb3React } from '@web3-react/core';
 import { Contract, ethers, Signer } from 'ethers';
+import { Buffer } from 'buffer';
 import {
   ChangeEvent,
   MouseEvent,
@@ -9,7 +12,8 @@ import {
 } from 'react';
 import styled from 'styled-components';
 import GreeterArtifact from '../artifacts/contracts/Greeter.sol/Greeter.json';
-import { testSecp } from '../solana/adapter';
+import { getProgram, testSecp } from '../solana/adapter';
+import * as anchor from "@project-serum/anchor";
 import { cartesiRollups } from '../utils/cartesi';
 import { Provider } from '../utils/provider';
 import { SectionDivider } from './SectionDivider';
@@ -60,7 +64,6 @@ export function Greeter(): ReactElement {
   const [greetingInput, setGreetingInput] = useState<string>('');
 
   async function sendInputToCartesiRollups() {
-    await testSecp();
     if (!signer) {
       console.log('Signer is missing');
       return;
@@ -70,16 +73,32 @@ export function Greeter(): ReactElement {
       const signerAddress = await inputContract.signer.getAddress();
       console.log(`using account "${signerAddress}"`);
 
-      // const payload = "AT5FiVtGESwkZI4CSYS3rB1BUKhO/SsuWkdI7U0a+EfOYhWoUFcpPgFDhCa9n6lZP4j/JurMY90/6/PY/XoErA8BAAIFaLXcC6Cywbwm74mPOjeCatSweRxlWr35eTLpIEf+WOE9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW788smY3PSJVY8mgIeGmx7C+RnzWnx1yuebvR7LVvAwu3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUa4D7xZK8QCXLSfAn7UqVg66AIgQ0PFcKgpkbDEnLEQFAQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw==";
-      const    payload = "AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAAIFFybWHFW000X6Fh9INUXjDFyslsQEO9vYTSKwhFCdxsYncoAj68/Yh3Z6aCQ+HfuZos9sTUPL1UGVo18P60mOdT1z6d2TT/edgG/kgvQBgJ1MW/eZyWqytY17yDvMwpbvAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUdlN59BE15mJFx5D2CQATph/FmvpA1qgoV1XD6o9iqAMAQQEAgEAAzivr20fDZib7R5BeIsFgFu17Fh5aS+aUWyIETyN7Z3f+/8A4qOFJ4Nz6AMAAAAAAAAEAAAAc2x1Zw==";
-      const inputBytes = ethers.utils.toUtf8Bytes(payload);
-      // send transaction
-      const tx = await inputContract.addInput(inputBytes);
-      console.log(`transaction: ${tx.hash}`);
-      console.log("waiting for confirmation...");
-      const receipt = await tx.wait(1);
+      const daoSlug = 'slug'
+      const { program, wallet  } = await getProgram(signer)
+      const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
+      
+      const [daoPubkey, _bump1] = await PublicKey.findProgramAddress([
+        anchor.utils.bytes.utf8.encode('dao'),
+        Buffer.from(daoSlug.slice(0, 32)),
+      ], program.programId);
 
-      console.log(`receipt: ${JSON.stringify(receipt, null, 4)}`);
+      const [validation, _bump2] = await PublicKey.findProgramAddress([
+        anchor.utils.bytes.utf8.encode('child'),
+        wallet.publicKey.toBuffer(),
+        daoPubkey.toBuffer(),
+      ], program.programId);
+      console.log(`dao = ${daoPubkey.toBase58()}`)
+      console.log(`validation = ${validation.toBase58()}`)
+      console.log(`programId = ${program.programId.toBase58()}`)
+      console.log(`mint = ${mint.toBase58()}`)
+      console.log(`payer = ${wallet.publicKey.toBase58()}`)
+      const txSolana = await program.methods.initialize(mint, new anchor.BN(1000), daoSlug)
+        .accounts({
+          zendao: daoPubkey,
+          validation: validation,
+        })
+        .rpc()
+      console.log({ txSolana })
     } catch (e) {
       console.log('Error', e)
     }

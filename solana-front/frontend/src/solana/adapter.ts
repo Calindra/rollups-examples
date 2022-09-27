@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { clusterApiUrl, ConfirmOptions, Connection, Keypair, PublicKey, SerializeConfig, Signer, Transaction, TransactionSignature } from "@solana/web3.js";
 import { Buffer } from 'buffer';
+import { ethers } from 'ethers';
 
 import * as anchor from "@project-serum/anchor";
 import idl from './models/solzen.json';
@@ -7,6 +9,7 @@ import { AnchorProvider, Program } from "@project-serum/anchor";
 import { Solzen } from "./models/solzen";
 import * as secp from '@noble/secp256k1';
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
+import { cartesiRollups } from "../utils/cartesi";
 
 const programID = new PublicKey(idl.metadata.address);
 const encoder = new TextEncoder()
@@ -69,19 +72,14 @@ class AdaptedWallet implements Wallet {
 
     async signTransaction(tx: anchor.web3.Transaction): Promise<anchor.web3.Transaction> {
         console.log('signTransaction...')
-        // const buffer = tx.serialize()
-        // console.log(buffer)
         const msg = tx.compileMessage()
-        // // console.log(msg)
         console.log(msg.accountKeys.map(k => k.toBase58()))
+
+        // just fill the signature bytes
         const signature = Buffer.alloc(64);
-        for (let i = 0; i < signature.length; i++) {
-            signature[i] = 1;
-        }
+
         tx.addSignature(this._publicKey, signature);
 
-        // const serializedMessage = msg.serialize();
-        // console.log({ serializedMessage })
         tx.serialize = function (_config?: SerializeConfig): Buffer {
             const signData = this.serializeMessage();
             return (this as any)._serialize(signData);
@@ -102,13 +100,10 @@ class AdaptedWallet implements Wallet {
     }
 }
 
-export function getProvider() {
-    const commitment = 'processed';
-    const network = clusterApiUrl('devnet');
-    const connection = new Connection(network, commitment)
-    const wallet = new AdaptedWallet();
-    const provider = new AnchorProvider(connection, wallet, { commitment });
-    provider.sendAndConfirm = async function (tx: Transaction,
+class AnchorProviderAdapter extends AnchorProvider {
+    public etherSigner: ethers.Signer | undefined
+
+    async sendAndConfirm(tx: Transaction,
         signers?: Signer[],
         opts?: ConfirmOptions
     ): Promise<TransactionSignature> {
@@ -129,12 +124,44 @@ export function getProvider() {
         const rawTx = tx.serialize();
 
         console.log({ rawTx: toBuffer(rawTx).toString('base64') })
+
+        const payload = toBuffer(rawTx).toString('base64');
+        const inputBytes = ethers.utils.toUtf8Bytes(payload);
+        if (this.etherSigner) {
+            const { inputContract } = await cartesiRollups(this.etherSigner);
+
+            // send transaction
+            const txEth = await inputContract.addInput(inputBytes);
+            console.log(`transaction: ${txEth.hash}`);
+            console.log("waiting for confirmation...");
+            const receipt = await txEth.wait(1);
+            console.log(`receipt: ${JSON.stringify(receipt, null, 4)}`);
+        }
         return { ok: 1 } as any
     }
+}
+
+export function getProvider(signer?: ethers.Signer) {
+    const commitment = 'processed';
+    const network = clusterApiUrl('devnet');
+    const connection = new Connection(network, commitment)
+    const wallet = new AdaptedWallet();
+    const provider = new AnchorProviderAdapter(connection, wallet, { commitment });
+    provider.etherSigner = signer;
     return { provider, wallet };
 }
 
-export async function getProgram() {
-    const { provider } = getProvider();
-    return new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+export async function getProgram(signer?: ethers.Signer) {
+    const { provider, wallet } = getProvider(signer);
+    const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+    if (signer) {
+        const ethAddress = await signer.getAddress();
+        const [userPubkey, _bump0] = await PublicKey.findProgramAddress([
+            anchor.utils.bytes.utf8.encode('pubkey'),
+            anchor.utils.bytes.utf8.encode(ethAddress.slice(0, 32)),
+        ], new PublicKey(idl.metadata.address));
+        wallet.publicKey = userPubkey;
+        console.log('wallet publicKey changed')
+    }
+    return { program, provider, wallet }
 }

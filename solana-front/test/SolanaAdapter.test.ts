@@ -11,7 +11,7 @@ describe.only('SolanaAdapter', () => {
     it('should run', async () => {
         const daoSlug = 'slug'
         const { mint, payer } = await Factory.createMint();
-        const program = await getProgram()
+        const { program, wallet } = await getProgram()
         const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
             anchor.utils.bytes.utf8.encode('dao'),
             Buffer.from(daoSlug.slice(0, 32)),
@@ -19,7 +19,7 @@ describe.only('SolanaAdapter', () => {
 
         const [userAccount, _bump2] = await PublicKey.findProgramAddress([
             anchor.utils.bytes.utf8.encode('child'),
-            payer.publicKey.toBuffer(),
+            wallet.publicKey.toBuffer(),
             daoPubkey.toBuffer(),
         ], program.programId);
         console.log(`dao = ${daoPubkey.toBase58()}`)
@@ -33,7 +33,7 @@ describe.only('SolanaAdapter', () => {
                 validation: userAccount,
             })
             .rpc()
-        console.log({tx})
+        console.log({ tx })
     })
 
 })
