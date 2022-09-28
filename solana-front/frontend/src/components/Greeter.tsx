@@ -140,6 +140,26 @@ export function Greeter(): ReactElement {
     console.log({ txSolana })
   }
 
+  async function deleteDataInsideCartesiRollups() {
+    if (!signer) {
+      console.log('Signer is missing');
+      return;
+    }
+    const daoSlug = 'slug'
+    const { program } = await getProgram(signer)
+    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+      anchor.utils.bytes.utf8.encode('dao'),
+      Buffer.from(daoSlug.slice(0, 32)),
+    ], program.programId)
+
+    const txSolana = await program.methods.closeDao()
+      .accounts({
+        zendao: daoPubkey,
+      })
+      .rpc()
+    console.log({ txSolana })
+  }
+
   useEffect((): void => {
     if (!library) {
       setSigner(undefined);
@@ -306,6 +326,11 @@ export function Greeter(): ReactElement {
           onClick={updateDataInsideCartesiRollups}
         >
           Update Solana Account
+        </StyledButton>
+        <StyledButton
+          onClick={deleteDataInsideCartesiRollups}
+        >
+          Delete Solana Account
         </StyledButton>
       </StyledGreetingDiv>
     </>

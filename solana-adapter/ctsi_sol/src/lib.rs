@@ -62,6 +62,15 @@ impl AccountManager {
         let account = serde_json::from_str::<AccountFileData>(&contents)?;
         Ok(account)
     }
+
+    pub fn delete_account(
+        &self,
+        pubkey: &Pubkey,
+    ) -> std::result::Result<(), Box<dyn std::error::Error>> {
+        let file_path = format!("{}/{}.json", &self.base_path, pubkey.to_string());
+        fs::remove_file(file_path)?;
+        Ok(())
+    }
 }
 
 #[derive(Serialize, Deserialize)]

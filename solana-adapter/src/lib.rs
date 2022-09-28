@@ -128,7 +128,13 @@ pub fn call_smart_contract(payload: &str) {
             data: data.to_vec(),
             lamports: lamports,
         };
-        account_manager.write_account(&acc.key, &account_file_data).unwrap();
+        if lamports <= 0 {
+            account_manager.delete_account(&acc.key).unwrap();
+            println!("! deleted = {:?}", acc.key);
+        } else {
+            account_manager.write_account(&acc.key, &account_file_data).unwrap();
+            println!("! saved = {:?}", acc.key);
+        }
     }
 }
 

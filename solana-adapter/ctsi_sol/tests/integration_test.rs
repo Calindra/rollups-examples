@@ -40,3 +40,19 @@ fn it_should_write_an_account_by_public_key() {
     let account_data = account_manager.read_account(&pubkey).unwrap();
     assert_eq!(account_data.lamports, 123u64);
 }
+
+#[test]
+fn it_should_delete_an_account_by_public_key() {
+    let pubkey = Pubkey::from_str("2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv").unwrap();
+    println!("key = {}", pubkey.to_string());
+    let mut data = Vec::new();
+    data.push(1);
+    let account_file_data = ctsi_sol::AccountFileData {
+        owner: Pubkey::from_str("EwiqbApgaLT2kQaohqZnSXT9HbkMQWDektXEjXGMJyJv").unwrap(),
+        data: data,
+        lamports: 123,
+    };
+    let account_manager = create_account_manager(false);
+    account_manager.write_account(&pubkey, &account_file_data).unwrap();
+    account_manager.delete_account(&pubkey).unwrap();
+}
