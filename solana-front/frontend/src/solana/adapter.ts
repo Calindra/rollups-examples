@@ -153,6 +153,9 @@ class ConnectionAdapter extends Connection {
         console.log('Cartesi inspect url', url);
         const resp = await fetch(url.toString());
         const cartesiResponse = await resp.json()
+        if (!cartesiResponse.reports || !cartesiResponse.reports.length) {
+            return null
+        }
         const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload)
         const infoData = JSON.parse(jsonString);
         console.log({ [publicKey.toBase58()]: infoData })

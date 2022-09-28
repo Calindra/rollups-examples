@@ -60,11 +60,10 @@ Starting echo-dapp: Sending finish
 
 After that, you can interact with the application normally [as explained above](#interacting-with-the-application).
 
-```
-rustup default nightly
-```
+## Developer side notes
 
 ```
+rustup default nightly
 export SOLANA_DATA_PATH=../solana-data
 cargo watch -x 'test -- --nocapture'
 ```

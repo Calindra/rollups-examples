@@ -119,6 +119,27 @@ export function Greeter(): ReactElement {
     setDaoAccount(JSON.stringify(daoAccount, null, 4));
   }
 
+  async function updateDataInsideCartesiRollups() {
+    if (!signer) {
+      console.log('Signer is missing');
+      return;
+    }
+    const mint = new PublicKey("So11111111111111111111111111111111111111112");
+    const daoSlug = 'slug'
+    const { program } = await getProgram(signer)
+    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+      anchor.utils.bytes.utf8.encode('dao'),
+      Buffer.from(daoSlug.slice(0, 32)),
+    ], program.programId)
+
+    const txSolana = await program.methods.update(mint, new anchor.BN(1234))
+      .accounts({
+        zendao: daoPubkey,
+      })
+      .rpc()
+    console.log({ txSolana })
+  }
+
   useEffect((): void => {
     if (!library) {
       setSigner(undefined);
@@ -273,14 +294,19 @@ export function Greeter(): ReactElement {
         <StyledButton
           onClick={sendInputToCartesiRollups}
         >
-          Send Cartesi Input
+          Create Solana Account
         </StyledButton>
         <StyledButton
           onClick={readDataFromCartesiRollups}
         >
-          Read Cartesi Data
+          Read Solana Account
         </StyledButton>
         <pre>{daoAccount}</pre>
+        <StyledButton
+          onClick={updateDataInsideCartesiRollups}
+        >
+          Update Solana Account
+        </StyledButton>
       </StyledGreetingDiv>
     </>
   );
