@@ -63,6 +63,10 @@ After that, you can interact with the application normally [as explained above](
 ## Developer side notes
 
 ```
+docker system prune -a --volumes
+```
+
+```
 rustup default nightly
 export SOLANA_DATA_PATH=../solana-data
 cargo watch -x 'test -- --nocapture'

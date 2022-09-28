@@ -109,14 +109,19 @@ export function Greeter(): ReactElement {
       console.log('Signer is missing');
       return;
     }
-    const daoSlug = 'slug'
-    const { program } = await getProgram(signer)
-    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
-      anchor.utils.bytes.utf8.encode('dao'),
-      Buffer.from(daoSlug.slice(0, 32)),
-    ], program.programId)
-    const daoAccount = await program.account.zendao.fetch(daoPubkey);
-    setDaoAccount(JSON.stringify(daoAccount, null, 4));
+    try {
+      const daoSlug = 'slug'
+      const { program } = await getProgram(signer)
+      const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+        anchor.utils.bytes.utf8.encode('dao'),
+        Buffer.from(daoSlug.slice(0, 32)),
+      ], program.programId)
+      const daoAccount = await program.account.zendao.fetch(daoPubkey);
+      setDaoAccount(JSON.stringify(daoAccount, null, 4));
+    } catch (e) {
+      console.log(e);
+      setDaoAccount((e as any).message);
+    }
   }
 
   async function updateDataInsideCartesiRollups() {
