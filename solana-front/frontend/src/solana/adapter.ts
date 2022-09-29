@@ -7,11 +7,10 @@ import * as anchor from "@project-serum/anchor";
 import idl from './models/solzen.json';
 import { AnchorProvider, Program } from "@project-serum/anchor";
 import { Solzen } from "./models/solzen";
-import * as secp from '@noble/secp256k1';
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
 import { cartesiRollups } from "../utils/cartesi";
 
-const programID = new PublicKey(idl.metadata.address);
+export const programID = new PublicKey(idl.metadata.address);
 const encoder = new TextEncoder()
 
 export const toBuffer = (arr: Buffer | Uint8Array | Array<number>): Buffer => {
@@ -37,26 +36,6 @@ export async function findValidationAddress(daoPubkey: PublicKey, walletPublicKe
         walletPublicKey.toBuffer(),
         daoPubkey.toBuffer(),
     ], programID);
-}
-
-export async function testSecp() {
-    // keys, messages & other inputs can be Uint8Arrays or hex strings
-    // Uint8Array.from([0xde, 0xad, 0xbe, 0xef]) === 'deadbeef'
-    const message = anchor.utils.bytes.utf8.encode('hello world');
-    const privKey = secp.utils.randomPrivateKey();
-    const pubKey = secp.getPublicKey(privKey);
-    const msgHash = await secp.utils.sha256(message);
-    const [signature, recovery] = await secp.sign(msgHash, privKey, { recovered: true });
-    const isValid = secp.verify(signature, msgHash, pubKey);
-
-    const recoveredPubkey = secp.recoverPublicKey(msgHash, signature, recovery);
-    console.log({ recoveredPubkey, pubKey });
-
-    // Schnorr signatures
-    const rpub = secp.schnorr.getPublicKey(privKey);
-    const rsignature = await secp.schnorr.sign(message, privKey);
-    const risValid = await secp.schnorr.verify(rsignature, message, rpub);
-    console.log({ isValid, risValid })
 }
 
 class AdaptedWallet implements Wallet {
@@ -168,6 +147,27 @@ class ConnectionAdapter extends Connection {
     }
 }
 
+export function convertSolanaAddress2Eth(pubkey: PublicKey) {
+    const buffer = pubkey.toBuffer();
+    const eth20bytes: number[] = [];
+    for (let i = buffer.length - 1; i > 11; i--) {
+        eth20bytes.push(buffer[i]);
+    }
+    const recoveredAddress = ethers.utils.hexValue(eth20bytes);
+    return recoveredAddress;
+}
+
+export function convertEthAddress2Solana(ethereumAddress: string) {
+    const bytes = Buffer.from(ethereumAddress.substring(2), 'hex');
+    const sol32bytes: number[] = [];
+    for (let i = 0; i < 32; i++) {
+        sol32bytes.push(bytes[i] || 0)
+    }
+    // existe espaco para colocar o byte para recuperar a chave publica original
+    const pubkey = PublicKey.decode(Buffer.from(sol32bytes));
+    return pubkey;
+}
+
 export function getProvider(signer?: ethers.Signer) {
     const commitment = 'processed';
     const network = clusterApiUrl('devnet');
@@ -183,11 +183,7 @@ export async function getProgram(signer?: ethers.Signer) {
     const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
     if (signer) {
         const ethAddress = await signer.getAddress();
-        const [userPubkey, _bump0] = await PublicKey.findProgramAddress([
-            anchor.utils.bytes.utf8.encode('pubkey'),
-            anchor.utils.bytes.utf8.encode(ethAddress.slice(0, 32)),
-        ], new PublicKey(idl.metadata.address));
-        wallet.publicKey = userPubkey;
+        wallet.publicKey = convertEthAddress2Solana(ethAddress);
         console.log('wallet publicKey changed')
     }
     return { program, provider, wallet }
