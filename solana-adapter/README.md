@@ -71,3 +71,10 @@ rustup default nightly
 export SOLANA_DATA_PATH=../solana-data
 cargo watch -x 'test -- --nocapture'
 ```
+
+```
+docker-compose -f ../docker-compose.yml -f ./docker-compose.override.yml down -v
+docker buildx bake --load
+docker compose -f ../docker-compose.yml -f ./docker-compose.override.yml up
+
+```

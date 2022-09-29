@@ -12,9 +12,8 @@ import {
 } from 'react';
 import styled from 'styled-components';
 import GreeterArtifact from '../artifacts/contracts/Greeter.sol/Greeter.json';
-import { getProgram, testSecp } from '../solana/adapter';
+import { getProgram } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
-import { cartesiRollups } from '../utils/cartesi';
 import { Provider } from '../utils/provider';
 import { SectionDivider } from './SectionDivider';
 
@@ -316,27 +315,30 @@ export function Greeter(): ReactElement {
         >
           Submit
         </StyledButton>
-        <StyledButton
-          onClick={sendInputToCartesiRollups}
-        >
-          Create Solana Account
-        </StyledButton>
-        <StyledButton
-          onClick={readDataFromCartesiRollups}
-        >
-          Read Solana Account
-        </StyledButton>
-        <pre>{daoAccount}</pre>
-        <StyledButton
-          onClick={updateDataInsideCartesiRollups}
-        >
-          Update Solana Account
-        </StyledButton>
-        <StyledButton
-          onClick={deleteDataInsideCartesiRollups}
-        >
-          Delete Solana Account
-        </StyledButton>
+        <div>
+          Solana
+          <StyledButton
+            onClick={sendInputToCartesiRollups}
+          >
+            Create Account
+          </StyledButton>
+          <StyledButton
+            onClick={readDataFromCartesiRollups}
+          >
+            Read Account
+          </StyledButton>
+          <pre>{daoAccount}</pre>
+          <StyledButton
+            onClick={updateDataInsideCartesiRollups}
+          >
+            Update Account
+          </StyledButton>
+          <StyledButton
+            onClick={deleteDataInsideCartesiRollups}
+          >
+            Delete Account
+          </StyledButton>
+        </div>
       </StyledGreetingDiv>
     </>
   );

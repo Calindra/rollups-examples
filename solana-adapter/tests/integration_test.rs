@@ -1,16 +1,34 @@
+use std::str::FromStr;
+
+use anchor_lang::prelude::Pubkey;
 use solana_adapter::{call_smart_contract, self, read_account_info_as_json};
 
 #[test]
 fn it_should_call_adapter_without_errors_to_create_an_account() {
     let encoded64 = "AT5FiVtGESwkZI4CSYS3rB1BUKhO/SsuWkdI7U0a+EfOYhWoUFcpPgFDhCa9n6lZP4j/JurMY90/6/PY/XoErA8BAAIFaLXcC6Cywbwm74mPOjeCatSweRxlWr35eTLpIEf+WOE9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW788smY3PSJVY8mgIeGmx7C+RnzWnx1yuebvR7LVvAwu3AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUa4D7xZK8QCXLSfAn7UqVg66AIgQ0PFcKgpkbDEnLEQFAQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw==";
     let hex_payload = format!("0x{}", hex::encode(encoded64));
+    let pubkey = Pubkey::from_str("83kEotjF8mm7wZPqqkTRGkmixoKQzzoeEaipxkSrQTjn").unwrap();
 
-    call_smart_contract(&hex_payload);
+    // convert pubkey to ethereum address
+    let tmp: Vec<u8> = pubkey.to_bytes()[12..].to_vec().into_iter().rev().collect();
+    let sender_key = hex::encode(&tmp);
+    let msg_sender = format!("0x{}", sender_key);
+    
+    println!("msg_sender = {}", msg_sender);
+    call_smart_contract(&hex_payload, &msg_sender);
 }
 
 #[test]
 fn it_should_call_adapter_to_update_an_account() {
     
+}
+
+#[test]
+fn it_should_validate_public_key_eth_matches_solana() {
+    let encoded64 = "AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIFAAAAAAAAAAAAAAAAZiK5/895coK4as709oitGuXWn/M9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW79hOdgffqSFwR4MaqpqSzXlBSS0M5PrBq8FFzX/hnMW5AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUd2Jd/lKEoTVTiIYaxgO2ii/8ZHEybZ1ho7bLWzqpLo3AQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw==";
+    let hex_payload = format!("0x{}", hex::encode(encoded64));
+    let msg_sender = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
+    call_smart_contract(&hex_payload, &msg_sender);
 }
 
 #[test]

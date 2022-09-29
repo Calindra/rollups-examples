@@ -81,10 +81,11 @@ pub fn read_account_info_as_json(pubkey_str: &str) -> String {
     serde_json::to_string(&account_json).unwrap()
 }
 
-pub fn call_smart_contract(payload: &str) {
+pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
+    let sender_bytes: Vec<u8> = hex::decode(&msg_sender[2..]).unwrap().into_iter().rev().collect();
 
     let program_id = solana_smart_contract::ID;
     let first = &tx.message.instructions[0];
@@ -96,9 +97,11 @@ pub fn call_smart_contract(payload: &str) {
         params.push((a, b, c, pubkey));
     }
     for param in params.iter_mut() {
+        let key = &param.3;
+        let is_signer = key.to_bytes()[12..] == sender_bytes;
         accounts.push(AccountInfo {
-            key: &param.3,
-            is_signer: true,
+            key,
+            is_signer,
             is_writable: true,
             lamports: Rc::new(RefCell::new(&mut param.1)),
             data: Rc::new(RefCell::new(&mut param.0)),
@@ -107,7 +110,11 @@ pub fn call_smart_contract(payload: &str) {
             rent_epoch: 1,
         });
     }
-    println!("accounts indexes {:?}", first.accounts);
+    
+    println!("tx.message.header.num_required_signatures = {:?}", tx.message.header.num_required_signatures);
+    println!("tx.message.header.num_readonly_signed_accounts = {:?}", tx.message.header.num_readonly_signed_accounts);
+    println!("signatures.len() = {:?}", tx.signatures.len());
+    println!("accounts indexes = {:?}", first.accounts);
     println!("method dispatch's sighash = {:?}", &first.data[..8]);
     let mut ordered_accounts = Vec::new();
     for index in first.accounts.iter() {
@@ -120,7 +127,7 @@ pub fn call_smart_contract(payload: &str) {
     solana_smart_contract::entry(&program_id, &ordered_accounts, &first.data).unwrap();
     let account_manager = create_account_manager();
     for acc in ordered_accounts.iter() {
-        println!("- saving = {:?}", acc.key);
+        // println!("- saving = {:?}", acc.key);
         let data = acc.data.borrow_mut();
         let lamports: u64 = **acc.lamports.borrow_mut();
         let account_file_data = AccountFileData {
@@ -133,7 +140,7 @@ pub fn call_smart_contract(payload: &str) {
             println!("! deleted = {:?}", acc.key);
         } else {
             account_manager.write_account(&acc.key, &account_file_data).unwrap();
-            println!("! saved = {:?}", acc.key);
+            println!("   saved = {:?}", acc.key);
         }
     }
 }
@@ -147,8 +154,11 @@ pub async fn handle_advance(
     let payload = request["data"]["payload"]
         .as_str()
         .ok_or("Missing payload")?;
+    let msg_sender = request["data"]["msg_sender"]
+    .as_str()
+    .ok_or("Missing msg_sender")?;
     println!("Adding notice");
-    call_smart_contract(&payload);
+    call_smart_contract(&payload, &msg_sender);
     let notice = object! {"payload" => format!("{}", payload)};
     let req = hyper::Request::builder()
         .method(hyper::Method::POST)

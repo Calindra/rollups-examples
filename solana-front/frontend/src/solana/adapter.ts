@@ -101,10 +101,8 @@ class AnchorProviderAdapter extends AnchorProvider {
         });
 
         const rawTx = tx.serialize();
-
-        console.log({ rawTx: toBuffer(rawTx).toString('base64') })
-
         const payload = toBuffer(rawTx).toString('base64');
+        console.log('Cartesi Rollups payload', payload);
         const inputBytes = ethers.utils.toUtf8Bytes(payload);
         if (this.etherSigner) {
             const { inputContract } = await cartesiRollups(this.etherSigner);
