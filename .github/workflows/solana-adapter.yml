@@ -1,0 +1,34 @@
+# yaml-language-server: =https://json.schemastore.org/github-workflow.json
+---
+name: "Build Solana Adapter DApp"
+on:
+    pull_request:
+        paths:
+            - "docker/**"
+            - "base.hcl"
+            - ".github/workflows/dapp-build.yml"
+            - ".github/workflows/solana-adapter.yml"
+            - "solana-adapter/**"
+            - "!**/*.md"
+    push:
+        tags:
+            - v*
+        branches:
+            - develop
+            - feature/solana-adapter
+jobs:
+    # build:
+    #     uses: ./.github/workflows/dapp-build.yml
+    #     with:
+    #         dapp-name: solana-adapter
+    #     secrets: inherit
+    just-test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions-rs/toolchain@v1
+              with:
+                toolchain: nightly
+            - run: cd ${{ github.workspace }} && cd ./solana-adapter
+            - run: cargo test -- --nocapture --test-threads 1
+
