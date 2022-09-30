@@ -1,8 +1,9 @@
 use std::{rc::Rc, cell::RefCell, str::FromStr};
 use ctsi_sol::{AccountManager, AccountFileData};
 use serde::{Deserialize, Serialize};
-use anchor_lang::{prelude::{Pubkey, AccountInfo}};
+use anchor_lang::{prelude::{Pubkey, AccountInfo}, AnchorSerialize};
 use json::{object, JsonValue};
+use transaction::Signature;
 pub mod transaction;
 
 async fn print_response<T: hyper::body::HttpBody>(
@@ -53,8 +54,7 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
         Err(_) => {
             let zeroes: [u8; MAX_SIZE] = [0; MAX_SIZE];
             let info_data = zeroes.to_vec();
-            let owner = Pubkey::from_str("2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv").unwrap();
-            // let owner = Pubkey::default();
+            let owner: Pubkey = solana_smart_contract::ID;
             return (info_data, lamports, owner);
         }
     };
@@ -81,6 +81,10 @@ pub fn read_account_info_as_json(pubkey_str: &str) -> String {
     serde_json::to_string(&account_json).unwrap()
 }
 
+fn check_signature(pubkey: &Pubkey, sender_bytes: &[u8], _signature: &Signature) -> bool {
+    sender_bytes == &pubkey.to_bytes()[12..]
+}
+
 pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(encoded64).unwrap();
@@ -88,59 +92,65 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let sender_bytes: Vec<u8> = hex::decode(&msg_sender[2..]).unwrap().into_iter().rev().collect();
 
     let program_id = solana_smart_contract::ID;
-    let first = &tx.message.instructions[0];
-
-    let mut accounts = Vec::new();
-    let mut params = Vec::new();
-    for pubkey in tx.message.account_keys.iter() {
-        let (a, b, c) = load_account_info_data(&pubkey);
-        params.push((a, b, c, pubkey));
-    }
-    for param in params.iter_mut() {
-        let key = &param.3;
-        let is_signer = key.to_bytes()[12..] == sender_bytes;
-        accounts.push(AccountInfo {
-            key,
-            is_signer,
-            is_writable: true,
-            lamports: Rc::new(RefCell::new(&mut param.1)),
-            data: Rc::new(RefCell::new(&mut param.0)),
-            owner: &param.2,
-            executable: true,
-            rent_epoch: 1,
-        });
-    }
-    
-    println!("tx.message.header.num_required_signatures = {:?}", tx.message.header.num_required_signatures);
-    println!("tx.message.header.num_readonly_signed_accounts = {:?}", tx.message.header.num_readonly_signed_accounts);
-    println!("signatures.len() = {:?}", tx.signatures.len());
-    println!("accounts indexes = {:?}", first.accounts);
-    println!("method dispatch's sighash = {:?}", &first.data[..8]);
-    let mut ordered_accounts = Vec::new();
-    for index in first.accounts.iter() {
-        let i: usize = (*index).into();
-        ordered_accounts.push(accounts[i].to_owned());
-    }
-    for acc in ordered_accounts.iter() {
-        println!("- ordered_accounts = {:?}", acc.key);
-    }
-    solana_smart_contract::entry(&program_id, &ordered_accounts, &first.data).unwrap();
-    let account_manager = create_account_manager();
-    for acc in ordered_accounts.iter() {
-        // println!("- saving = {:?}", acc.key);
-        let data = acc.data.borrow_mut();
-        let lamports: u64 = **acc.lamports.borrow_mut();
-        let account_file_data = AccountFileData {
-            owner: acc.owner.to_owned(),
-            data: data.to_vec(),
-            lamports: lamports,
-        };
-        if lamports <= 0 {
-            account_manager.delete_account(&acc.key).unwrap();
-            println!("! deleted = {:?}", acc.key);
-        } else {
-            account_manager.write_account(&acc.key, &account_file_data).unwrap();
-            println!("   saved = {:?}", acc.key);
+    for tx_instruction in &tx.message.instructions {
+        let mut accounts = Vec::new();
+        let mut params = Vec::new();
+        let mut i = 0;
+        for pubkey in tx.message.account_keys.iter() {
+            let (a, b, c) = load_account_info_data(&pubkey);
+            let mut is_signer = false;
+            if tx.signatures.len() > i {
+                let signature = &tx.signatures[i];
+                is_signer = check_signature(&pubkey, &sender_bytes, &signature);
+            }
+            params.push((a, b, c, pubkey, is_signer));
+            i = i + 1;
+        }
+        for param in params.iter_mut() {
+            let key = &param.3;
+            let is_signer = &param.4;
+            accounts.push(AccountInfo {
+                key,
+                is_signer: *is_signer,
+                is_writable: true,
+                lamports: Rc::new(RefCell::new(&mut param.1)),
+                data: Rc::new(RefCell::new(&mut param.0)),
+                owner: &param.2,
+                executable: true,
+                rent_epoch: 1,
+            });
+        }
+        
+        println!("tx.message.header.num_required_signatures = {:?}", tx.message.header.num_required_signatures);
+        println!("tx.message.header.num_readonly_signed_accounts = {:?}", tx.message.header.num_readonly_signed_accounts);
+        println!("signatures.len() = {:?}", tx.signatures.len());
+        println!("accounts indexes = {:?}", tx_instruction.accounts);
+        println!("method dispatch's sighash = {:?}", &tx_instruction.data[..8]);
+        let mut ordered_accounts = Vec::new();
+        for index in tx_instruction.accounts.iter() {
+            let i: usize = (*index).into();
+            ordered_accounts.push(accounts[i].to_owned());
+        }
+        for acc in ordered_accounts.iter() {
+            println!("- ordered_accounts = {:?}", acc.key);
+        }
+        solana_smart_contract::entry(&program_id, &ordered_accounts, &tx_instruction.data).unwrap();
+        let account_manager = create_account_manager();
+        for acc in ordered_accounts.iter() {
+            let data = acc.data.borrow_mut();
+            let lamports: u64 = **acc.lamports.borrow_mut();
+            let account_file_data = AccountFileData {
+                owner: acc.owner.to_owned(),
+                data: data.to_vec(),
+                lamports: lamports,
+            };
+            if lamports <= 0 {
+                account_manager.delete_account(&acc.key).unwrap();
+                println!("! deleted = {:?}", acc.key);
+            } else {
+                account_manager.write_account(&acc.key, &account_file_data).unwrap();
+                println!("   saved = {:?}", acc.key);
+            }
         }
     }
 }

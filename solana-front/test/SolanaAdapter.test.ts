@@ -65,13 +65,13 @@ describe('SolanaAdapter', () => {
         console.log({ isValid, risValid })
     })
 
-    it.only('should convert the public key from eth to solana', async () => {
+    it('should convert the public key from eth to solana', async () => {
         const ethereumAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
         const pubkey = convertEthAddress2Solana(ethereumAddress);
         expect(pubkey.toBase58()).to.eq('1111111111112RXi1yn6kTp7G8Td7o6z3Ciqw9v2');
     })
 
-    it.only('should convert the public key from solana to eth', async () => {
+    it('should convert the public key from solana to eth', async () => {
         const ethereumAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
         const pubkey = convertEthAddress2Solana(ethereumAddress);
         const recoveredAddress = convertSolanaAddress2Eth(pubkey);

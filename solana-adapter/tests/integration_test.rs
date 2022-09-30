@@ -5,7 +5,7 @@ use solana_adapter::{call_smart_contract, self, read_account_info_as_json};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn setup() {
-    println!("***** setup *****");
+    println!("\n***** setup *****");
     let dir = std::env::temp_dir();
     let start = SystemTime::now();
     let since_the_epoch = start
