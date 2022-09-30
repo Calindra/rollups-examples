@@ -29,6 +29,4 @@ jobs:
             - uses: actions-rs/toolchain@v1
               with:
                 toolchain: nightly
-            - run: cd ${{ github.workspace }} && cd ./solana-adapter
-            - run: cargo test -- --nocapture --test-threads 1
-
+            - run: cd ${{ github.workspace }} && cd ./solana-adapter && cargo test -- --nocapture --test-threads 1
