@@ -68,8 +68,7 @@ docker system prune -a --volumes
 
 ```
 rustup default nightly
-export SOLANA_DATA_PATH=../solana-data
-cargo watch -x 'test -- --nocapture'
+cargo watch -x 'test -- --nocapture --test-threads 1'
 ```
 
 ```
