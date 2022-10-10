@@ -164,7 +164,7 @@ pub async fn handle_advance(
     let payload = request["data"]["payload"]
         .as_str()
         .ok_or("Missing payload")?;
-    let msg_sender = request["data"]["msg_sender"]
+    let msg_sender = request["data"]["metadata"]["msg_sender"]
     .as_str()
     .ok_or("Missing msg_sender")?;
     println!("Adding notice");

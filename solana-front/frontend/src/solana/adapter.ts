@@ -124,16 +124,23 @@ class ConnectionAdapter extends Connection {
         publicKey: PublicKey,
         _commitmentOrConfig?: Commitment | GetAccountInfoConfig,
     ): Promise<AccountInfo<Buffer> | null> {
-        const host = window.location.host;
+        let host = window.location.host;
         const protocol = window.location.protocol;
-        const url = `${protocol}//${host.replace(/^[0-9]*/, '5005')}/inspect/${publicKey.toBase58()}`
+        if (/^[0-9]{4}/.test(host)) {
+            // gitpod host
+            host = host.replace(/^[0-9]*/, '5005');
+        } else {
+            // localhost like
+            host = host.replace(/:[0-9]+$/,':5005')
+        }
+        const url = `${protocol}//${host}/inspect/${publicKey.toBase58()}`;
         console.log('Cartesi inspect url', url);
         const resp = await fetch(url.toString());
-        const cartesiResponse = await resp.json()
+        const cartesiResponse = await resp.json();
         if (!cartesiResponse.reports || !cartesiResponse.reports.length) {
-            return null
+            return null;
         }
-        const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload)
+        const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload);
         const infoData = JSON.parse(jsonString);
         console.log({ [publicKey.toBase58()]: infoData })
         return {
@@ -141,7 +148,7 @@ class ConnectionAdapter extends Connection {
             data: Buffer.from(infoData.data, 'base64'),
             executable: false, // pode ser que seja executavel
             lamports: +infoData.lamports,
-        }
+        };
     }
 }
 
