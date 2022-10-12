@@ -1,8 +1,10 @@
-use anchor_lang::prelude::ProgramError;
-use anchor_lang::prelude::Pubkey;
-use anchor_lang::prelude::Result;
+use ::anchor_lang::prelude::ProgramError;
+use ::anchor_lang::prelude::Pubkey;
+use ::anchor_lang::prelude::Result;
+use ::anchor_lang::solana_program::sysvar::SysvarId;
 use serde::{Deserialize, Serialize};
 use std::fs;
+pub mod anchor_lang;
 
 pub struct Clock {
     pub unix_timestamp: i64,
@@ -16,6 +18,7 @@ impl Clock {
     }
 }
 
+#[derive(Default, Serialize, Deserialize)]
 pub struct Rent {}
 impl Rent {
     pub fn get() -> core::result::Result<anchor_lang::prelude::Rent, ProgramError> {
@@ -25,6 +28,18 @@ impl Rent {
             burn_percent: 1,
         })
     }
+}
+impl SysvarId for Rent {
+    fn id() -> Pubkey { 
+        Pubkey::default()
+    }
+    fn check_id(_: &Pubkey) -> bool { 
+        true
+    }
+}
+
+impl<'a, 'b> anchor_lang::prelude::SolanaSysvar for Rent {
+    
 }
 
 pub struct AccountManager {

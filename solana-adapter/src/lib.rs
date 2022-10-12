@@ -41,7 +41,7 @@ fn create_account_manager() -> AccountManager {
 fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
     let account_manager = create_account_manager();
     const MAX_SIZE: usize = 2000;
-    let lamports = 1000;
+    let mut lamports = 1000;
     let read_account_data_file = account_manager.read_account(&pubkey);
     match read_account_data_file {
         Ok(account_data_file) => {
@@ -53,8 +53,102 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
         }
         Err(_) => {
             let zeroes: [u8; MAX_SIZE] = [0; MAX_SIZE];
-            let info_data = zeroes.to_vec();
-            let owner: Pubkey = solana_smart_contract::ID;
+            let mut info_data = zeroes.to_vec();
+            let mut owner: Pubkey = solana_smart_contract::ID;
+            if pubkey.to_string() == "6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY" {
+                owner = anchor_lang::solana_program::system_program::ID;
+                info_data = vec![1];
+                lamports = 0;
+            }
+            if pubkey.to_string() == "4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV" {
+                println!("Mint not found");
+                owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+                info_data = vec![
+                    1,
+                    0,
+                    0,
+                    0,
+                    175,
+                    35,
+                    124,
+                    60,
+                    86,
+                    42,
+                    49,
+                    153,
+                    12,
+                    90,
+                    41,
+                    181,
+                    244,
+                    158,
+                    219,
+                    93,
+                    35,
+                    126,
+                    32,
+                    99,
+                    96,
+                    228,
+                    221,
+                    154,
+                    226,
+                    15,
+                    253,
+                    35,
+                    204,
+                    138,
+                    183,
+                    90,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    9,
+                    1,
+                    1,
+                    0,
+                    0,
+                    0,
+                    175,
+                    35,
+                    124,
+                    60,
+                    86,
+                    42,
+                    49,
+                    153,
+                    12,
+                    90,
+                    41,
+                    181,
+                    244,
+                    158,
+                    219,
+                    93,
+                    35,
+                    126,
+                    32,
+                    99,
+                    96,
+                    228,
+                    221,
+                    154,
+                    226,
+                    15,
+                    253,
+                    35,
+                    204,
+                    138,
+                    183,
+                    90
+                ];
+                //info_data = zeroes.to_vec();
+            }
             return (info_data, lamports, owner);
         }
     };
@@ -109,18 +203,24 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
         for param in params.iter_mut() {
             let key = &param.3;
             let is_signer = &param.4;
-            accounts.push(AccountInfo {
+            let is_writable = true;
+            let executable = true;
+            let account_info = AccountInfo {
                 key,
                 is_signer: *is_signer,
-                is_writable: true,
+                is_writable,
                 lamports: Rc::new(RefCell::new(&mut param.1)),
                 data: Rc::new(RefCell::new(&mut param.0)),
                 owner: &param.2,
-                executable: true,
+                executable,
                 rent_epoch: 1,
-            });
+            };
+            accounts.push(account_info);
         }
-        
+
+        let pidx: usize = (tx_instruction.program_id_index).into();
+        println!("tx_instruction.program_id_index = {:?}", tx_instruction.program_id_index);
+        println!("tx_instruction.program_id = {:?}", accounts[pidx].key);
         println!("tx.message.header.num_required_signatures = {:?}", tx.message.header.num_required_signatures);
         println!("tx.message.header.num_readonly_signed_accounts = {:?}", tx.message.header.num_readonly_signed_accounts);
         println!("signatures.len() = {:?}", tx.signatures.len());

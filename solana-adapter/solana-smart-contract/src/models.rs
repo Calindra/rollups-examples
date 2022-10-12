@@ -1,4 +1,4 @@
-use anchor_lang::prelude::*;
+use ctsi_sol::anchor_lang::{self, prelude::*};
 
 const DISCRIMINATOR_LENGTH: usize = 8;
 const PUBLIC_KEY_LENGTH: usize = 32;

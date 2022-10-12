@@ -42,6 +42,42 @@ export type Solzen = {
       ]
     },
     {
+      "name": "initWallet",
+      "accounts": [
+        {
+          "name": "escrowWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userSending",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "update",
       "accounts": [
         {
@@ -178,23 +214,14 @@ export type Solzen = {
         "fields": [
           {
             "name": "token",
-            "docs": [
-              "* The token to be managed"
-            ],
             "type": "publicKey"
           },
           {
             "name": "minBalance",
-            "docs": [
-              "* Minimum amount to be a member"
-            ],
             "type": "u64"
           },
           {
             "name": "slug",
-            "docs": [
-              "* DAOs slug"
-            ],
             "type": "string"
           }
         ]
@@ -227,23 +254,14 @@ export type Solzen = {
         "fields": [
           {
             "name": "pubkey",
-            "docs": [
-              "* User public key"
-            ],
             "type": "publicKey"
           },
           {
             "name": "dao",
-            "docs": [
-              "* Its like an ID"
-            ],
             "type": "publicKey"
           },
           {
             "name": "id",
-            "docs": [
-              "* Telegram user ID"
-            ],
             "type": "u64"
           }
         ]
@@ -318,6 +336,42 @@ export const IDL: Solzen = {
       ]
     },
     {
+      "name": "initWallet",
+      "accounts": [
+        {
+          "name": "escrowWallet",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "userSending",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "update",
       "accounts": [
         {
@@ -454,23 +508,14 @@ export const IDL: Solzen = {
         "fields": [
           {
             "name": "token",
-            "docs": [
-              "* The token to be managed"
-            ],
             "type": "publicKey"
           },
           {
             "name": "minBalance",
-            "docs": [
-              "* Minimum amount to be a member"
-            ],
             "type": "u64"
           },
           {
             "name": "slug",
-            "docs": [
-              "* DAOs slug"
-            ],
             "type": "string"
           }
         ]
@@ -503,23 +548,14 @@ export const IDL: Solzen = {
         "fields": [
           {
             "name": "pubkey",
-            "docs": [
-              "* User public key"
-            ],
             "type": "publicKey"
           },
           {
             "name": "dao",
-            "docs": [
-              "* Its like an ID"
-            ],
             "type": "publicKey"
           },
           {
             "name": "id",
-            "docs": [
-              "* Telegram user ID"
-            ],
             "type": "u64"
           }
         ]

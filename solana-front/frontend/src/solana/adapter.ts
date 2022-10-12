@@ -122,7 +122,7 @@ class AnchorProviderAdapter extends AnchorProvider {
 class ConnectionAdapter extends Connection {
     async getAccountInfo(
         publicKey: PublicKey,
-        _commitmentOrConfig?: Commitment | GetAccountInfoConfig,
+        commitmentOrConfig?: Commitment | GetAccountInfoConfig,
     ): Promise<AccountInfo<Buffer> | null> {
         let host = window.location.host;
         const protocol = window.location.protocol;
@@ -138,7 +138,8 @@ class ConnectionAdapter extends Connection {
         const resp = await fetch(url.toString());
         const cartesiResponse = await resp.json();
         if (!cartesiResponse.reports || !cartesiResponse.reports.length) {
-            return null;
+            console.log('Fallback to solana getAccountInfo')
+            return super.getAccountInfo(publicKey, commitmentOrConfig);
         }
         const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload);
         const infoData = JSON.parse(jsonString);
@@ -180,16 +181,16 @@ export function getProvider(signer?: ethers.Signer) {
     const wallet = new AdaptedWallet();
     const provider = new AnchorProviderAdapter(connection, wallet, { commitment });
     provider.etherSigner = signer;
-    return { provider, wallet };
+    return { provider, wallet, connection };
 }
 
 export async function getProgram(signer?: ethers.Signer) {
-    const { provider, wallet } = getProvider(signer);
+    const { provider, wallet, connection } = getProvider(signer);
     const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
     if (signer) {
         const ethAddress = await signer.getAddress();
         wallet.publicKey = convertEthAddress2Solana(ethAddress);
         console.log('wallet publicKey changed')
     }
-    return { program, provider, wallet }
+    return { program, provider, wallet, connection }
 }

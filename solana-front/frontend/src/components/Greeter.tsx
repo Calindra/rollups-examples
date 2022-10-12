@@ -16,6 +16,7 @@ import { getProgram } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
 import { Provider } from '../utils/provider';
 import { SectionDivider } from './SectionDivider';
+import { createMint } from '@solana/spl-token';
 
 const StyledDeployContractButton = styled.button`
   width: 180px;
@@ -62,6 +63,50 @@ export function Greeter(): ReactElement {
   const [greeting, setGreeting] = useState<string>('');
   const [greetingInput, setGreetingInput] = useState<string>('');
   const [daoAccount, setDaoAccount] = useState<string>('');
+
+
+  async function readMint() {
+    const { connection } = await getProgram(signer)
+
+    const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
+    // const tokenProgramAddress = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    // console.log(tokenProgramAddress.toBuffer());
+    const mintInfo = await connection.getAccountInfo(mint);
+    console.log(JSON.stringify(mintInfo, null, 4));
+  }
+
+  async function createWalletAccount() {
+    const { program, connection } = await getProgram(signer)
+    const fromWallet = anchor.web3.Keypair.generate();
+    // const toWallet = anchor.web3.Keypair.generate();
+    // const signature = await connection.requestAirdrop(fromWallet.publicKey, 1_000_000_000);
+    // await connection.confirmTransaction(signature, 'confirmed');
+    // const mint = await createMint(connection, fromWallet, fromWallet.publicKey, fromWallet.publicKey, 9);
+    const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
+    // const tokenProgramAddress = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+    // console.log(tokenProgramAddress.toBuffer());
+
+    const [escrowWallet, bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("wallet")),
+        mint.toBuffer(),
+      ],
+      program.programId
+    );
+    console.log('Init wallet...', {
+      from: fromWallet.publicKey.toBase58(),
+      escrowWallet: escrowWallet.toBase58(),
+      mint: mint.toBase58(),
+      bump
+    });
+    await program.methods
+      .initWallet()
+      .accounts({
+        escrowWallet,
+        mint,
+      })
+      .rpc();
+  }
 
   async function sendInputToCartesiRollups() {
     if (!signer) {
@@ -337,6 +382,16 @@ export function Greeter(): ReactElement {
             onClick={deleteDataInsideCartesiRollups}
           >
             Delete Account
+          </StyledButton>
+          <StyledButton
+            onClick={createWalletAccount}
+          >
+            Create TokenAccount
+          </StyledButton>
+          <StyledButton
+            onClick={readMint}
+          >
+            Read Mint
           </StyledButton>
         </div>
       </StyledGreetingDiv>
