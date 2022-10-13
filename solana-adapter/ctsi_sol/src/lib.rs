@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 pub mod anchor_lang;
 pub mod anchor_spl;
+pub mod mem_acc;
 
 pub struct Clock {
     pub unix_timestamp: i64,
