@@ -5,6 +5,7 @@ use ::anchor_lang::solana_program::sysvar::SysvarId;
 use serde::{Deserialize, Serialize};
 use std::fs;
 pub mod anchor_lang;
+pub mod anchor_spl;
 
 pub struct Clock {
     pub unix_timestamp: i64,

@@ -8,7 +8,7 @@ authors = ["Alex Mikhalevich <alex.mikhalevich@cartesi.io>"]
 # remove the anchor-lang
 # anchor-lang = "^0.25.0"
 # anchor-spl = "^0.25.0"
-anchor-spl = { path = "../../../anchor/spl" }
+# anchor-spl = { path = "../../../anchor/spl" }
 
 json = "0.12"
 hyper = { version = "0.14", features = ["http1", "runtime", "client"] }

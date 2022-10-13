@@ -1,6 +1,7 @@
 use ctsi_sol::anchor_lang::{self, prelude::*};
 use ctsi_sol::anchor_lang::solana_program::system_program;
-use anchor_spl::token::{self, Transfer, Mint, TokenAccount};
+use ctsi_sol::anchor_spl::token::{self, Transfer, Mint, TokenAccount};
+use ctsi_sol::anchor_spl;
 use ctsi_sol::Clock;
 use ctsi_sol::Rent;
 

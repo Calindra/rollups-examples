@@ -1,6 +1,6 @@
 use std::str::FromStr;
 use std::fs;
-use anchor_lang::prelude::Pubkey;
+use ctsi_sol::anchor_lang::prelude::Pubkey;
 use solana_adapter::{call_smart_contract, self, read_account_info_as_json};
 use std::time::{SystemTime, UNIX_EPOCH};
 

@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell, str::FromStr};
 use ctsi_sol::{AccountManager, AccountFileData};
 use serde::{Deserialize, Serialize};
-use anchor_lang::{prelude::{Pubkey, AccountInfo}, AnchorSerialize};
+use ctsi_sol::anchor_lang::{prelude::{Pubkey, AccountInfo}};
 use json::{object, JsonValue};
 use transaction::Signature;
 pub mod transaction;
@@ -56,9 +56,10 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
             let mut info_data = zeroes.to_vec();
             let mut owner: Pubkey = solana_smart_contract::ID;
             if pubkey.to_string() == "6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY" {
-                owner = anchor_lang::solana_program::system_program::ID;
-                info_data = vec![1];
+                owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
                 lamports = 0;
+                let zeroes: [u8; 165] = [0; 165];
+                info_data = zeroes.to_vec();
             }
             if pubkey.to_string() == "4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV" {
                 println!("Mint not found");
