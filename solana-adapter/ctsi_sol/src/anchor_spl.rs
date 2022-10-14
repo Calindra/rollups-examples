@@ -71,11 +71,12 @@ pub mod token {
         let mut account_data = NativeAccountData::new(InnerTokenAccount::LEN, spl_token::id());
         InnerTokenAccount::pack(token_account, &mut account_data.data).unwrap();
         // println!("{:?}", account_data.data);
-        **account_info.lamports.borrow_mut() += 100000;
-        account_info.owner = &spl_token::ID;
-        println!("InnerTokenAccount::LEN = {:?}", InnerTokenAccount::LEN);
-        println!("inner owner = {:?}", account_info.owner);
-        println!("ctx.accounts.authority.key = {:?}", ctx.accounts.authority.key);
+        // **account_info.lamports.borrow_mut() += 100000;
+        // account_info.owner = &spl_token::ID;
+        // println!("InnerTokenAccount::LEN = {:?}", InnerTokenAccount::LEN);
+        println!("initialize_account: key = {:?}", account_info.key);
+        println!("initialize_account: inner owner = {:?}", account_info.owner);
+        println!("initialize_account: ctx.accounts.authority.key = {:?}", ctx.accounts.authority.key);
         // account_info.data.replace_with(f)
         let mut data = account_info.data.borrow_mut();
         let mut i = 0;

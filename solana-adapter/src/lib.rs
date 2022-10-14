@@ -1,8 +1,9 @@
-use std::{rc::Rc, cell::RefCell, str::FromStr};
-use ctsi_sol::{AccountManager, AccountFileData};
-use serde::{Deserialize, Serialize};
-use ctsi_sol::anchor_lang::{prelude::{Pubkey, AccountInfo}};
+use ctsi_sol::anchor_lang::prelude::{AccountInfo, Pubkey};
+use ctsi_sol::owner_manager::Manager;
+use ctsi_sol::{owner_manager, AccountFileData, AccountManager};
 use json::{object, JsonValue};
+use serde::{Deserialize, Serialize};
+use std::{cell::RefCell, rc::Rc, str::FromStr};
 use transaction::Signature;
 pub mod transaction;
 
@@ -30,11 +31,11 @@ fn create_account_manager() -> AccountManager {
         Ok(path) => {
             account_manager.set_base_path(path);
             return account_manager;
-        },
+        }
         Err(_) => {
             account_manager.set_base_path("./".to_owned());
             return account_manager;
-        },
+        }
     };
 }
 
@@ -56,7 +57,7 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
             let mut info_data = zeroes.to_vec();
             let mut owner: Pubkey = solana_smart_contract::ID;
             if pubkey.to_string() == "6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY" {
-                owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+                // owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
                 lamports = 0;
                 let zeroes: [u8; 165] = [0; 165];
                 info_data = zeroes.to_vec();
@@ -65,88 +66,11 @@ fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
                 println!("Mint not found");
                 owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
                 info_data = vec![
-                    1,
-                    0,
-                    0,
-                    0,
-                    175,
-                    35,
-                    124,
-                    60,
-                    86,
-                    42,
-                    49,
-                    153,
-                    12,
-                    90,
-                    41,
-                    181,
-                    244,
-                    158,
-                    219,
-                    93,
-                    35,
-                    126,
-                    32,
-                    99,
-                    96,
-                    228,
-                    221,
-                    154,
-                    226,
-                    15,
-                    253,
-                    35,
-                    204,
-                    138,
-                    183,
-                    90,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    9,
-                    1,
-                    1,
-                    0,
-                    0,
-                    0,
-                    175,
-                    35,
-                    124,
-                    60,
-                    86,
-                    42,
-                    49,
-                    153,
-                    12,
-                    90,
-                    41,
-                    181,
-                    244,
-                    158,
-                    219,
-                    93,
-                    35,
-                    126,
-                    32,
-                    99,
-                    96,
-                    228,
-                    221,
-                    154,
-                    226,
-                    15,
-                    253,
-                    35,
-                    204,
-                    138,
-                    183,
-                    90
+                    1, 0, 0, 0, 175, 35, 124, 60, 86, 42, 49, 153, 12, 90, 41, 181, 244, 158, 219,
+                    93, 35, 126, 32, 99, 96, 228, 221, 154, 226, 15, 253, 35, 204, 138, 183, 90, 0,
+                    0, 0, 0, 0, 0, 0, 0, 9, 1, 1, 0, 0, 0, 175, 35, 124, 60, 86, 42, 49, 153, 12,
+                    90, 41, 181, 244, 158, 219, 93, 35, 126, 32, 99, 96, 228, 221, 154, 226, 15,
+                    253, 35, 204, 138, 183, 90,
                 ];
                 //info_data = zeroes.to_vec();
             }
@@ -171,7 +95,7 @@ pub fn read_account_info_as_json(pubkey_str: &str) -> String {
         key: pubkey_str.to_string(),
         owner: Pubkey::from(account_file_data.owner).to_string(),
         data: base64::encode(account_file_data.data),
-        lamports: account_file_data.lamports.to_string()
+        lamports: account_file_data.lamports.to_string(),
     };
     serde_json::to_string(&account_json).unwrap()
 }
@@ -184,7 +108,11 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
-    let sender_bytes: Vec<u8> = hex::decode(&msg_sender[2..]).unwrap().into_iter().rev().collect();
+    let sender_bytes: Vec<u8> = hex::decode(&msg_sender[2..])
+        .unwrap()
+        .into_iter()
+        .rev()
+        .collect();
 
     let program_id = solana_smart_contract::ID;
     for tx_instruction in &tx.message.instructions {
@@ -218,24 +146,72 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
             };
             accounts.push(account_info);
         }
-
         let pidx: usize = (tx_instruction.program_id_index).into();
-        println!("tx_instruction.program_id_index = {:?}", tx_instruction.program_id_index);
+        println!(
+            "tx_instruction.program_id_index = {:?}",
+            tx_instruction.program_id_index
+        );
         println!("tx_instruction.program_id = {:?}", accounts[pidx].key);
-        println!("tx.message.header.num_required_signatures = {:?}", tx.message.header.num_required_signatures);
-        println!("tx.message.header.num_readonly_signed_accounts = {:?}", tx.message.header.num_readonly_signed_accounts);
+        println!(
+            "tx.message.header.num_required_signatures = {:?}",
+            tx.message.header.num_required_signatures
+        );
+        println!(
+            "tx.message.header.num_readonly_signed_accounts = {:?}",
+            tx.message.header.num_readonly_signed_accounts
+        );
         println!("signatures.len() = {:?}", tx.signatures.len());
         println!("accounts indexes = {:?}", tx_instruction.accounts);
-        println!("method dispatch's sighash = {:?}", &tx_instruction.data[..8]);
+        println!(
+            "method dispatch's sighash = {:?}",
+            &tx_instruction.data[..8]
+        );
         let mut ordered_accounts = Vec::new();
-        for index in tx_instruction.accounts.iter() {
-            let i: usize = (*index).into();
-            ordered_accounts.push(accounts[i].to_owned());
+        // let mut j = 0;
+        
+        // let mut pointers = Vec::new();
+        let key = Pubkey::from_str("6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY").unwrap();
+        let new_owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+        let tot = tx_instruction.accounts.len();
+        let mut manager = Manager::new();
+        for j in 0..tot {
+            let index = tx_instruction.accounts[j];
+            let i: usize = (index).into();
+            let owned = accounts[i].to_owned();
+            ordered_accounts.push(owned);
+            let p: *mut &Pubkey = std::ptr::addr_of_mut!(ordered_accounts[j].owner);
+            manager.pointers.push((p, ordered_accounts[j].key));
+            println!("address {:?}", p);
+            // unsafe {
+            //     *p = &new_owner;
+            // }
         }
+        Manager::change_the_owner(&manager, key.clone(), &new_owner);
+        // manager.pointers = pointers;
+        
+        // let new_owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+        
+        // unsafe {
+        //     *manager.pointers[0].0 = &new_owner;    
+        // }
+        
         for acc in ordered_accounts.iter() {
             println!("- ordered_accounts = {:?}", acc.key);
+            println!("     owner = {:?}", acc.owner.to_string());
         }
-        solana_smart_contract::entry(&program_id, &ordered_accounts, &tx_instruction.data).unwrap();
+
+        let resp =
+            solana_smart_contract::entry(&program_id, &ordered_accounts, &tx_instruction.data);
+
+        resp.unwrap();
+        // match resp {
+        //     Ok(_) => {
+        //         println!("Success!");
+        //     }
+        //     Err(_) => {
+        //         println!("Error: Something is not right! Handle any errors plz");
+        //     }
+        // }
         let account_manager = create_account_manager();
         for acc in ordered_accounts.iter() {
             let data = acc.data.borrow_mut();
@@ -249,8 +225,11 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
                 account_manager.delete_account(&acc.key).unwrap();
                 println!("! deleted = {:?}", acc.key);
             } else {
-                account_manager.write_account(&acc.key, &account_file_data).unwrap();
+                account_manager
+                    .write_account(&acc.key, &account_file_data)
+                    .unwrap();
                 println!("   saved = {:?}", acc.key);
+                println!("     owner = {:?}", acc.owner.to_string());
             }
         }
     }
@@ -266,8 +245,8 @@ pub async fn handle_advance(
         .as_str()
         .ok_or("Missing payload")?;
     let msg_sender = request["data"]["metadata"]["msg_sender"]
-    .as_str()
-    .ok_or("Missing msg_sender")?;
+        .as_str()
+        .ok_or("Missing msg_sender")?;
     println!("Adding notice");
     call_smart_contract(&payload, &msg_sender);
     let notice = object! {"payload" => format!("{}", payload)};

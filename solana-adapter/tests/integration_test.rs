@@ -1,20 +1,28 @@
-use std::str::FromStr;
+use ctsi_sol::{anchor_lang::prelude::Pubkey, owner_manager};
+use solana_adapter::{self, call_smart_contract, read_account_info_as_json};
 use std::fs;
-use ctsi_sol::anchor_lang::prelude::Pubkey;
-use solana_adapter::{call_smart_contract, self, read_account_info_as_json};
+use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn setup() {
-    println!("\n***** setup *****");
+    println!("\n\n***** setup *****\n");
     let dir = std::env::temp_dir();
     let start = SystemTime::now();
     let since_the_epoch = start
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards");
-    let final_temp_dir = format!("{}/{}", dir.as_os_str().to_str().unwrap(), since_the_epoch.subsec_nanos());
+    let final_temp_dir = format!(
+        "{}/{}",
+        dir.as_os_str().to_str().unwrap(),
+        since_the_epoch.subsec_nanos()
+    );
     println!("{}", final_temp_dir);
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
+    unsafe {
+        owner_manager::INDEX.clear();
+        owner_manager::OWNERS.clear();
+    }
 }
 
 fn create_default_account() {
@@ -44,7 +52,7 @@ fn it_should_call_adapter_without_errors_to_create_an_account() {
     let tmp: Vec<u8> = pubkey.to_bytes()[12..].to_vec().into_iter().rev().collect();
     let sender_key = hex::encode(&tmp);
     let msg_sender = format!("0x{}", sender_key);
-    
+
     println!("msg_sender = {}", msg_sender);
     call_smart_contract(&hex_payload, &msg_sender);
 }
@@ -73,9 +81,9 @@ fn it_should_call_adapter_to_close_an_account() {
 fn it_should_validate_public_key_eth_matches_solana() {
     setup();
     /*
-    Each item in the signatures array is a digital signature of the given message. 
-    The Solana runtime verifies that the number of signatures matches the number 
-    in the first 8 bits of the message header. 
+    Each item in the signatures array is a digital signature of the given message.
+    The Solana runtime verifies that the number of signatures matches the number
+    in the first 8 bits of the message header.
     It also verifies that each signature was signed by the private key corresponding
     to the public key at the same index in the message's account addresses array.
      */
@@ -96,7 +104,10 @@ fn it_should_call_adapter_to_read_account() {
 
 #[test]
 fn it_should_decode() {
-    let payload = format!("0x{}", hex::encode("58tPH4GsdSn5ehKszkcWK12S2rTBcG9GaMfKtkEZDBKt"));
+    let payload = format!(
+        "0x{}",
+        hex::encode("58tPH4GsdSn5ehKszkcWK12S2rTBcG9GaMfKtkEZDBKt")
+    );
     let hex_decoded = hex::decode(&payload[2..]).unwrap();
     let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
     println!("read pubkey {}", pubkey_str);

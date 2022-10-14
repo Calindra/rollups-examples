@@ -1,31 +1,38 @@
-
 pub use anchor_lang::*;
-
 // anchor_lang::system_program::create_account
 pub mod system_program {
-    use anchor_lang::prelude::{CpiContext, Pubkey, Result};
+    use anchor_lang::prelude::{CpiContext, Pubkey, Result, AccountInfo};
     use anchor_lang::solana_program;
     pub use anchor_lang::system_program::*;
+    use crate::owner_manager;
+
     pub fn create_account<'a, 'b, 'c, 'info>(
         ctx: CpiContext<'a, 'b, 'c, 'info, CreateAccount<'info>>,
         lamports: u64,
         space: u64,
         owner: &Pubkey,
     ) -> Result<()> {
-        anchor_lang::prelude::msg!("Inside system_program create_account...");
-        let ix = solana_program::system_instruction::create_account(
-            ctx.accounts.from.key,
-            ctx.accounts.to.key,
-            lamports,
-            space,
-            owner,
-        );
-        solana_program::program::invoke_signed(
-            &ix,
-            &[ctx.accounts.from, ctx.accounts.to],
-            ctx.signer_seeds,
-        )
-        .map_err(Into::into)
+        
+        anchor_lang::prelude::msg!("Inside lang system_program create_account...");
+        anchor_lang::prelude::msg!("create_account: owner {:?}", ctx.accounts.to.owner);
+
+        anchor_lang::prelude::msg!("create_account: owner {:?}", AsRef::<AccountInfo>::as_ref(&ctx.accounts.to).owner);
+        // owner_manager::change(ctx.accounts.to.key.to_string(), owner.to_string());
+        
+        // let ix = solana_program::system_instruction::create_account(
+        //     ctx.accounts.from.key,
+        //     ctx.accounts.to.key,
+        //     lamports,
+        //     space,
+        //     owner,
+        // );
+        // solana_program::program::invoke_signed(
+        //     &ix,
+        //     &[ctx.accounts.from, ctx.accounts.to],
+        //     ctx.signer_seeds,
+        // )
+        // .map_err(Into::into)
+        Ok(())
     }
 }
 
