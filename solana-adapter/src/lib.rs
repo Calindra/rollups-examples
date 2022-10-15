@@ -1,5 +1,4 @@
 use ctsi_sol::anchor_lang::prelude::{AccountInfo, Pubkey};
-use ctsi_sol::owner_manager::Manager;
 use ctsi_sol::{owner_manager, AccountFileData, AccountManager};
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
@@ -167,29 +166,19 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
             &tx_instruction.data[..8]
         );
         let mut ordered_accounts = Vec::new();
-        let key = Pubkey::from_str("6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY").unwrap();
-        let new_owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
         let tot = tx_instruction.accounts.len();
         for j in 0..tot {
             let index = tx_instruction.accounts[j];
             let i: usize = (index).into();
-            let owned = accounts[i].to_owned();
-            ordered_accounts.push(owned);
-            let p: *mut &Pubkey = std::ptr::addr_of_mut!(ordered_accounts[j].owner);
-            println!("a - {} address {:?}", j, p);
+            ordered_accounts.push(accounts[i].to_owned());
         }
 
         // the addresses changes when you push to vec
         // so we need to get the pointers here, after
-        let mut manager = Manager::new();
         for j in 0..tot {
             let p: *mut &Pubkey = std::ptr::addr_of_mut!(ordered_accounts[j].owner);
-            println!("b - {} address {:?}", j, p);
-            manager.pointers.push((p, ordered_accounts[j].key));
+            owner_manager::add_ptr(p as *mut Pubkey, ordered_accounts[j].key.clone());
         }
-
-        // TODO: we need to move this to anchor...
-        Manager::change_the_owner(&manager, key.clone(), &new_owner);
         
         for acc in ordered_accounts.iter() {
             println!("- ordered_accounts = {:?}", acc.key);

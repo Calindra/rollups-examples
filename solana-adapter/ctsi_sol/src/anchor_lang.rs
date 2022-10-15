@@ -1,24 +1,22 @@
 pub use anchor_lang::*;
+
+// Replacing the 
 // anchor_lang::system_program::create_account
 pub mod system_program {
-    use anchor_lang::prelude::{CpiContext, Pubkey, Result, AccountInfo};
-    use anchor_lang::solana_program;
+    use anchor_lang::prelude::{CpiContext, Pubkey, Result};
+    // use anchor_lang::solana_program;
     pub use anchor_lang::system_program::*;
     use crate::owner_manager;
 
     pub fn create_account<'a, 'b, 'c, 'info>(
         ctx: CpiContext<'a, 'b, 'c, 'info, CreateAccount<'info>>,
-        lamports: u64,
-        space: u64,
+        _lamports: u64,
+        _space: u64,
         owner: &Pubkey,
     ) -> Result<()> {
-        
         anchor_lang::prelude::msg!("Inside lang system_program create_account...");
-        anchor_lang::prelude::msg!("create_account: owner {:?}", ctx.accounts.to.owner);
+        owner_manager::change_owner(ctx.accounts.to.key.clone(), owner.clone());
 
-        anchor_lang::prelude::msg!("create_account: owner {:?}", AsRef::<AccountInfo>::as_ref(&ctx.accounts.to).owner);
-        // owner_manager::change(ctx.accounts.to.key.to_string(), owner.to_string());
-        
         // let ix = solana_program::system_instruction::create_account(
         //     ctx.accounts.from.key,
         //     ctx.accounts.to.key,
@@ -40,7 +38,7 @@ pub mod solana_program {
     pub use ::anchor_lang::solana_program::*;
 
     pub mod system_instruction {
-        use anchor_lang::{system_program::{Allocate, CreateAccount, CreateAccountWithSeed, Transfer, Assign}, prelude::{Pubkey, CpiContext}, solana_program};
+        use anchor_lang::{system_program::{Allocate, CreateAccount}, prelude::{Pubkey, CpiContext}, solana_program};
         use anchor_lang::prelude::Result;
         pub use anchor_lang::solana_program::system_instruction::*;
 

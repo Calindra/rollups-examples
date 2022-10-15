@@ -46,13 +46,11 @@ impl NativeAccountData {
 }
 
 pub mod token {
-    use std::cell::RefCell;
-    use std::rc::Rc;
 
     use anchor_lang::{prelude::{CpiContext, Result}, solana_program::program_pack::Pack};
     pub use anchor_spl::token::*;
-    use anchor_lang::solana_program;
-    use spl_token::state::{Account as InnerTokenAccount, AccountState as TokenAccountState, Mint as InnerMint};
+    // use anchor_lang::solana_program;
+    use spl_token::state::{Account as InnerTokenAccount, AccountState as TokenAccountState};
 
     use crate::anchor_spl::NativeAccountData;
 
@@ -60,7 +58,7 @@ pub mod token {
         ctx: CpiContext<'a, 'b, 'c, 'info, InitializeAccount<'info>>,
     ) -> Result<()> {
         anchor_lang::prelude::msg!("Inside token initialize_account...");
-        let mut account_info = ctx.accounts.account;
+        let account_info = ctx.accounts.account;
         let token_account = InnerTokenAccount {
             mint: *ctx.accounts.mint.key,
             owner: *ctx.accounts.authority.key,
