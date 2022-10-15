@@ -71,7 +71,7 @@ pub mod token {
         let mut account_data = NativeAccountData::new(InnerTokenAccount::LEN, spl_token::id());
         InnerTokenAccount::pack(token_account, &mut account_data.data).unwrap();
         // println!("{:?}", account_data.data);
-        // **account_info.lamports.borrow_mut() += 100000;
+        **account_info.lamports.borrow_mut() += 100000;
         // account_info.owner = &spl_token::ID;
         // println!("InnerTokenAccount::LEN = {:?}", InnerTokenAccount::LEN);
         println!("initialize_account: key = {:?}", account_info.key);
