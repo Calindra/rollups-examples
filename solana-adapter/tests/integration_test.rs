@@ -20,7 +20,7 @@ fn setup() {
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
     unsafe {
-        owner_manager::POINTERS.lock().unwrap().clear();
+        owner_manager::POINTERS.clear();
         owner_manager::OWNERS.clear();
     }
 }
