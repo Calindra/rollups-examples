@@ -16,7 +16,7 @@ import { getProgram } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
 import { Provider } from '../utils/provider';
 import { SectionDivider } from './SectionDivider';
-import { createMint } from '@solana/spl-token';
+import { createMint, getAccount } from '@solana/spl-token';
 
 const StyledDeployContractButton = styled.button`
   width: 180px;
@@ -63,7 +63,28 @@ export function Greeter(): ReactElement {
   const [greeting, setGreeting] = useState<string>('');
   const [greetingInput, setGreetingInput] = useState<string>('');
   const [daoAccount, setDaoAccount] = useState<string>('');
+  const [tokenAccount, setTokenAccount] = useState<string>('');
 
+  
+  async function readTokenAccount() {
+    const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
+    const { program, connection } = await getProgram(signer)
+    const [escrowWallet, bump] = await PublicKey.findProgramAddress(
+      [
+        Buffer.from(anchor.utils.bytes.utf8.encode("wallet")),
+        mint.toBuffer(),
+      ],
+      program.programId
+    );
+    const tokenAccount = await getAccount(connection, escrowWallet);
+    
+    setTokenAccount(JSON.stringify({
+      owner: tokenAccount.owner,
+      amount: tokenAccount.amount.toLocaleString(),
+      isNative: tokenAccount.isNative,
+      mint: tokenAccount.mint.toBase58(),
+    }, null, 4));
+  }
 
   async function readMint() {
     const { connection } = await getProgram(signer)
@@ -393,6 +414,12 @@ export function Greeter(): ReactElement {
           >
             Read Mint
           </StyledButton>
+          <StyledButton
+            onClick={readTokenAccount}
+          >
+            Read TokenAccount
+          </StyledButton>
+          <pre>{tokenAccount}</pre>
         </div>
       </StyledGreetingDiv>
     </>
