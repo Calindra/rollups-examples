@@ -108,19 +108,25 @@ fn check_signature(pubkey: &Pubkey, sender_bytes: &[u8], _signature: &Signature)
 
 pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
-    let mut child = Command::new("./stdio_call/target/debug/stdio_call")
-        .stdin(Stdio::piped())
-        .spawn()
-        .unwrap();
-    let child_stdin = child.stdin.as_mut().unwrap();
-    child_stdin.write_all(msg_sender.as_bytes()).unwrap();
-    child_stdin.write_all(b"\n").unwrap();
-    child_stdin.write_all(&encoded64).unwrap();
-    child_stdin.write_all(b"\n").unwrap();
-    drop(child_stdin);
-    let output = child.wait_with_output().unwrap();
+    let decoded = base64::decode(&encoded64).unwrap();
+    let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
+    for tx_instruction in &tx.message.instructions {
+        let pidx: usize = (tx_instruction.program_id_index).into();
+        let program_id = tx.message.account_keys[pidx];
+        let mut child = Command::new(format!("./solana_smart_contract_bin/{:?}", program_id))
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let child_stdin = child.stdin.as_mut().unwrap();
+        child_stdin.write_all(msg_sender.as_bytes()).unwrap();
+        child_stdin.write_all(b"\n").unwrap();
+        child_stdin.write_all(&encoded64).unwrap();
+        child_stdin.write_all(b"\n").unwrap();
+        drop(child_stdin);
+        let output = child.wait_with_output().unwrap();
 
-    println!("output = {:?}", output);
+        println!("output = {:?}", output);
+    }
 }
 
 pub async fn handle_advance(
