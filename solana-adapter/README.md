@@ -62,16 +62,16 @@ After that, you can interact with the application normally [as explained above](
 
 ## Developer side notes
 
-```
+```shell
 docker system prune -a --volumes
 ```
 
-```
+```shell
 rustup default nightly
 cargo watch -x 'test -- --nocapture --test-threads 1'
 ```
 
-```
+```shell
 docker-compose -f ../docker-compose.yml -f ./docker-compose.override.yml down -v
 docker buildx bake --load
 docker compose -f ../docker-compose.yml -f ./docker-compose.override.yml up

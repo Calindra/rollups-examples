@@ -15,7 +15,7 @@ on:
             - v*
         branches:
             - develop
-            - feature/solana-adapter
+            - feature/solana-adapter*
 jobs:
     # build:
     #     uses: ./.github/workflows/dapp-build.yml
