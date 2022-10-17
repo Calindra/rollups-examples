@@ -2,8 +2,11 @@ use ctsi_sol::anchor_lang::prelude::{AccountInfo, Pubkey};
 use ctsi_sol::{owner_manager, AccountFileData, AccountManager};
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use std::io::Write;
+use std::process::{Command, Stdio};
 use std::{cell::RefCell, rc::Rc, str::FromStr};
 use transaction::Signature;
+
 pub mod transaction;
 
 async fn print_response<T: hyper::body::HttpBody>(
@@ -105,119 +108,19 @@ fn check_signature(pubkey: &Pubkey, sender_bytes: &[u8], _signature: &Signature)
 
 pub fn call_smart_contract(payload: &str, msg_sender: &str) {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
-    let decoded = base64::decode(encoded64).unwrap();
-    let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
-    let sender_bytes: Vec<u8> = hex::decode(&msg_sender[2..])
-        .unwrap()
-        .into_iter()
-        .rev()
-        .collect();
+    let mut child = Command::new("./stdio_call/target/debug/stdio_call")
+        .stdin(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let child_stdin = child.stdin.as_mut().unwrap();
+    child_stdin.write_all(msg_sender.as_bytes()).unwrap();
+    child_stdin.write_all(b"\n").unwrap();
+    child_stdin.write_all(&encoded64).unwrap();
+    child_stdin.write_all(b"\n").unwrap();
+    drop(child_stdin);
+    let output = child.wait_with_output().unwrap();
 
-    let program_id = solana_smart_contract::ID;
-    for tx_instruction in &tx.message.instructions {
-        let mut accounts = Vec::new();
-        let mut params = Vec::new();
-        let mut i = 0;
-        for pubkey in tx.message.account_keys.iter() {
-            let (a, b, c) = load_account_info_data(&pubkey);
-            let mut is_signer = false;
-            if tx.signatures.len() > i {
-                let signature = &tx.signatures[i];
-                is_signer = check_signature(&pubkey, &sender_bytes, &signature);
-            }
-            params.push((a, b, c, pubkey, is_signer));
-            i = i + 1;
-        }
-        for param in params.iter_mut() {
-            let key = &param.3;
-            let is_signer = &param.4;
-            let is_writable = true;
-            let executable = true;
-            let account_info = AccountInfo {
-                key,
-                is_signer: *is_signer,
-                is_writable,
-                lamports: Rc::new(RefCell::new(&mut param.1)),
-                data: Rc::new(RefCell::new(&mut param.0)),
-                owner: &param.2,
-                executable,
-                rent_epoch: 1,
-            };
-            accounts.push(account_info);
-        }
-        let pidx: usize = (tx_instruction.program_id_index).into();
-        println!(
-            "tx_instruction.program_id_index = {:?}",
-            tx_instruction.program_id_index
-        );
-        println!("tx_instruction.program_id = {:?}", accounts[pidx].key);
-        println!(
-            "tx.message.header.num_required_signatures = {:?}",
-            tx.message.header.num_required_signatures
-        );
-        println!(
-            "tx.message.header.num_readonly_signed_accounts = {:?}",
-            tx.message.header.num_readonly_signed_accounts
-        );
-        println!("signatures.len() = {:?}", tx.signatures.len());
-        println!("accounts indexes = {:?}", tx_instruction.accounts);
-        println!(
-            "method dispatch's sighash = {:?}",
-            &tx_instruction.data[..8]
-        );
-        let mut ordered_accounts = Vec::new();
-        let tot = tx_instruction.accounts.len();
-        for j in 0..tot {
-            let index = tx_instruction.accounts[j];
-            let i: usize = (index).into();
-            ordered_accounts.push(accounts[i].to_owned());
-        }
-
-        // the addresses changes when you push to vec
-        // so we need to get the pointers here, after
-        for j in 0..tot {
-            let p: *mut &Pubkey = std::ptr::addr_of_mut!(ordered_accounts[j].owner);
-            owner_manager::add_ptr(p as *mut Pubkey, ordered_accounts[j].key.clone());
-        }
-        
-        for acc in ordered_accounts.iter() {
-            println!("- ordered_accounts = {:?}", acc.key);
-            println!("     owner = {:?}", acc.owner.to_string());
-        }
-
-        let resp =
-            solana_smart_contract::entry(&program_id, &ordered_accounts, &tx_instruction.data);
-
-        resp.unwrap();
-        // match resp {
-        //     Ok(_) => {
-        //         println!("Success!");
-        //     }
-        //     Err(_) => {
-        //         println!("Error: Something is not right! Handle any errors plz");
-        //     }
-        // }
-        let account_manager = create_account_manager();
-        for acc in ordered_accounts.iter() {
-            let data = acc.data.borrow_mut();
-            let lamports: u64 = **acc.lamports.borrow_mut();
-            let account_file_data = AccountFileData {
-                owner: acc.owner.to_owned(),
-                data: data.to_vec(),
-                lamports: lamports,
-            };
-            if lamports <= 0 {
-                account_manager.delete_account(&acc.key).unwrap();
-                println!("! deleted = {:?}", acc.key);
-            } else {
-                account_manager
-                    .write_account(&acc.key, &account_file_data)
-                    .unwrap();
-                println!("   saved = {:?}", acc.key);
-                println!("     owner = {:?}", acc.owner.to_string());
-            }
-        }
-    }
+    println!("output = {:?}", output);
 }
 
 pub async fn handle_advance(
