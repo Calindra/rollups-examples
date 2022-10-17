@@ -7,10 +7,10 @@ This Dapp was bootstrapped with [Create React App](https://github.com/facebook/c
 The Dapp is a simple, but complete React Dapp that interacts with a locally run 'Greeter' smart contract for developers new to web3. It introduces the developer to the following:
 
 1. How to use React and the [@web3-react](https://github.com/NoahZinsmeister/web3-react) npm package to connect to Metamask and display data regarding the connected Metamask wallet in the UI, such as the connected wallet's address, balance and nonce.
-3. How to deploy a new instance of the Greeter contract to the local Hardhat blockchain from the UI.
-4. How to perform a read-only call to the blockchain and display data stored on the blockchain in the UI.
-5. How to update the state of the local blockchain by updating the Greeter contract's `greeting` message via a transaction from the UI.
-6. How to keep the data of the connected wallet up-to-date by listening to new block events via ethers.js as new blocks are mined.
+2. How to deploy a new instance of the Greeter contract to the local Hardhat blockchain from the UI.
+3. How to perform a read-only call to the blockchain and display data stored on the blockchain in the UI.
+4. How to update the state of the local blockchain by updating the Greeter contract's `greeting` message via a transaction from the UI.
+5. How to keep the data of the connected wallet up-to-date by listening to new block events via ethers.js as new blocks are mined.
 
 To start the frontend:
 
