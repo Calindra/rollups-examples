@@ -62,7 +62,7 @@ pub mod token {
         let token_account = InnerTokenAccount {
             mint: *ctx.accounts.mint.key,
             owner: *ctx.accounts.authority.key,
-            amount: 0,
+            amount: 100,
             state: TokenAccountState::Initialized,
             ..Default::default()
         };

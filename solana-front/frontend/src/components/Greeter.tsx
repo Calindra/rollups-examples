@@ -65,9 +65,10 @@ export function Greeter(): ReactElement {
   const [daoAccount, setDaoAccount] = useState<string>('');
   const [tokenAccount, setTokenAccount] = useState<string>('');
 
-  
   async function readTokenAccount() {
+    
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
+    // const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
     const { program, connection } = await getProgram(signer)
     const [escrowWallet, bump] = await PublicKey.findProgramAddress(
       [
@@ -76,9 +77,11 @@ export function Greeter(): ReactElement {
       ],
       program.programId
     );
+    const accountInfo = await connection.getAccountInfo(escrowWallet);
     const tokenAccount = await getAccount(connection, escrowWallet);
     
     setTokenAccount(JSON.stringify({
+      programIdOwner: accountInfo?.owner.toBase58(),
       owner: tokenAccount.owner,
       amount: tokenAccount.amount.toLocaleString(),
       isNative: tokenAccount.isNative,
@@ -96,7 +99,7 @@ export function Greeter(): ReactElement {
     console.log(JSON.stringify(mintInfo, null, 4));
   }
 
-  async function createWalletAccount() {
+  async function createEscrowWalletTokenAccount() {
     const { program, connection } = await getProgram(signer)
     const fromWallet = anchor.web3.Keypair.generate();
     // const toWallet = anchor.web3.Keypair.generate();
@@ -405,7 +408,7 @@ export function Greeter(): ReactElement {
             Delete Account
           </StyledButton>
           <StyledButton
-            onClick={createWalletAccount}
+            onClick={createEscrowWalletTokenAccount}
           >
             Create TokenAccount
           </StyledButton>

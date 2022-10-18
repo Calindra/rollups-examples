@@ -1,1 +1,8 @@
-target
+./target
+./tests
+./ctsi_sol/target
+./ctsi_sol/tests
+./solana-smart-contract/target
+./solana-smart-contract/tests
+./stdio_call/target
+./stdio_call/tests

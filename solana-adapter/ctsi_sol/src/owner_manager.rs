@@ -1,6 +1,5 @@
 use anchor_lang::prelude::Pubkey;
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
 
 pub static mut OWNERS: Lazy<Vec<Pubkey>> = Lazy::new(|| vec![]);
 
