@@ -2,6 +2,8 @@ use ctsi_sol::anchor_lang::prelude::{AccountInfo, Pubkey};
 use ctsi_sol::{owner_manager, AccountFileData, AccountManager};
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
+use std::fmt;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::{cell::RefCell, rc::Rc, str::FromStr};
@@ -106,7 +108,21 @@ fn check_signature(pubkey: &Pubkey, sender_bytes: &[u8], _signature: &Signature)
     sender_bytes == &pubkey.to_bytes()[12..]
 }
 
-pub fn call_smart_contract(payload: &str, msg_sender: &str) {
+#[derive(Debug)]
+pub enum ContractError {
+    UnexpectedError,
+}
+impl std::error::Error for ContractError {}
+
+impl fmt::Display for ContractError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ContractError::UnexpectedError => write!(f, "Contract Error"),
+        }
+    }
+}
+
+pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), ContractError> {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(&encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
@@ -124,9 +140,23 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
         child_stdin.write_all(b"\n").unwrap();
         drop(child_stdin);
         let output = child.wait_with_output().unwrap();
-
+        let opt_exit_code = output.status.code();
+        match opt_exit_code {
+            Some(exit_code) => {
+                if exit_code == 0 {
+                    println!("Success!!!")
+                } else {
+                    let error = ContractError::UnexpectedError;
+                    return Err(error);
+                }
+            }
+            None => {
+                println!("Unexpected error");
+            }
+        }
         println!("output = {:?}", output);
     }
+    Ok(())
 }
 
 pub async fn handle_advance(
@@ -142,16 +172,32 @@ pub async fn handle_advance(
         .as_str()
         .ok_or("Missing msg_sender")?;
     println!("Adding notice");
-    call_smart_contract(&payload, &msg_sender);
-    let notice = object! {"payload" => format!("{}", payload)};
-    let req = hyper::Request::builder()
-        .method(hyper::Method::POST)
-        .header(hyper::header::CONTENT_TYPE, "application/json")
-        .uri(format!("{}/notice", server_addr))
-        .body(hyper::Body::from(notice.dump()))?;
-    let response = client.request(req).await?;
-    print_response(response).await?;
-    Ok("accept")
+    let contract_response = call_smart_contract(&payload, &msg_sender);
+    match contract_response {
+        Ok(_) => {
+            let notice = object! {"payload" => format!("{}", payload)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/notice", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            Ok("accept")
+        }
+        Err(error) => {
+            // TODO: retornar um erro detalhado
+            let notice = object! {"payload" => format!("{}", payload)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/report", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            Err(Box::new(error))
+        }
+    }
 }
 
 pub async fn handle_inspect(
