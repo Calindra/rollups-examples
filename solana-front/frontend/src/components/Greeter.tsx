@@ -55,22 +55,18 @@ const StyledButton = styled.button`
 
 export function Greeter(): ReactElement {
   const context = useWeb3React<Provider>();
-  const { library, active } = context;
+  const { library } = context;
 
   const [signer, setSigner] = useState<Signer>();
-  const [greeterContract, setGreeterContract] = useState<Contract>();
-  const [greeterContractAddr, setGreeterContractAddr] = useState<string>('');
-  const [greeting, setGreeting] = useState<string>('');
-  const [greetingInput, setGreetingInput] = useState<string>('');
   const [daoAccount, setDaoAccount] = useState<string>('');
   const [tokenAccount, setTokenAccount] = useState<string>('');
 
   async function readTokenAccount() {
-    
+
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
     // const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
     const { program, connection } = await getProgram(signer)
-    const [escrowWallet, bump] = await PublicKey.findProgramAddress(
+    const [escrowWallet, _bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("wallet")),
         mint.toBuffer(),
@@ -79,7 +75,7 @@ export function Greeter(): ReactElement {
     );
     const accountInfo = await connection.getAccountInfo(escrowWallet);
     const tokenAccount = await getAccount(connection, escrowWallet);
-    
+
     setTokenAccount(JSON.stringify({
       programIdOwner: accountInfo?.owner.toBase58(),
       owner: tokenAccount.owner,
@@ -100,7 +96,7 @@ export function Greeter(): ReactElement {
   }
 
   async function createEscrowWalletTokenAccount() {
-    const { program, connection } = await getProgram(signer)
+    const { program } = await getProgram(signer)
     const fromWallet = anchor.web3.Keypair.generate();
     // const toWallet = anchor.web3.Keypair.generate();
     // const signature = await connection.requestAirdrop(fromWallet.publicKey, 1_000_000_000);
@@ -123,16 +119,21 @@ export function Greeter(): ReactElement {
       mint: mint.toBase58(),
       bump
     });
-    await program.methods
+    try {
+      await program.methods
       .initWallet()
       .accounts({
         escrowWallet,
         mint,
       })
       .rpc();
+    } catch(e) {
+      console.error('Create TokenAccount error', e);
+      alert(`Create TokenAccount error: ${(e as any).message}`);
+    }
   }
 
-  async function sendInputToCartesiRollups() {
+  async function createAccountInfoInsideCartesi() {
     if (!signer) {
       console.log('Signer is missing');
       return;
@@ -166,9 +167,10 @@ export function Greeter(): ReactElement {
           validation: validation,
         })
         .rpc()
-      console.log({ txSolana })
+      console.log({ txSolana });
     } catch (e) {
-      console.log('Error', e)
+      console.error('Create AccountInfo error', e);
+      alert(`Create error: ${(e as any).message}`);
     }
   }
 
@@ -180,7 +182,7 @@ export function Greeter(): ReactElement {
     try {
       const daoSlug = 'slug'
       const { program } = await getProgram(signer)
-      const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+      const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
         anchor.utils.bytes.utf8.encode('dao'),
         Buffer.from(daoSlug.slice(0, 32)),
       ], program.programId)
@@ -200,17 +202,22 @@ export function Greeter(): ReactElement {
     const mint = new PublicKey("So11111111111111111111111111111111111111112");
     const daoSlug = 'slug'
     const { program } = await getProgram(signer)
-    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+    const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
       anchor.utils.bytes.utf8.encode('dao'),
       Buffer.from(daoSlug.slice(0, 32)),
     ], program.programId)
 
-    const txSolana = await program.methods.update(mint, new anchor.BN(1234))
-      .accounts({
-        zendao: daoPubkey,
-      })
-      .rpc()
-    console.log({ txSolana })
+    try {
+      const txSolana = await program.methods.update(mint, new anchor.BN(1234))
+        .accounts({
+          zendao: daoPubkey,
+        })
+        .rpc()
+      console.log({ txSolana })
+    } catch (e) {
+      console.error(`Update error`, e);
+      alert(`Update error: ${(e as any).message}`);
+    }
   }
 
   async function deleteDataInsideCartesiRollups() {
@@ -220,17 +227,22 @@ export function Greeter(): ReactElement {
     }
     const daoSlug = 'slug'
     const { program } = await getProgram(signer)
-    const [daoPubkey, _bump] = await await PublicKey.findProgramAddress([
+    const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
       anchor.utils.bytes.utf8.encode('dao'),
       Buffer.from(daoSlug.slice(0, 32)),
     ], program.programId)
 
-    const txSolana = await program.methods.closeDao()
-      .accounts({
-        zendao: daoPubkey,
-      })
-      .rpc()
-    console.log({ txSolana })
+    try {
+      const txSolana = await program.methods.closeDao()
+        .accounts({
+          zendao: daoPubkey,
+        })
+        .rpc()
+      console.log({ txSolana })
+    } catch (e) {
+      console.error(`Delete error`, e);
+      alert(`Delete error: ${(e as any).message}`);
+    }
   }
 
   useEffect((): void => {
@@ -242,118 +254,13 @@ export function Greeter(): ReactElement {
     setSigner(library.getSigner());
   }, [library]);
 
-  useEffect((): void => {
-    if (!greeterContract) {
-      return;
-    }
-
-    async function getGreeting(greeterContract: Contract): Promise<void> {
-      const _greeting = await greeterContract.greet();
-
-      if (_greeting !== greeting) {
-        setGreeting(_greeting);
-      }
-    }
-
-    getGreeting(greeterContract);
-  }, [greeterContract, greeting]);
-
-  function handleDeployContract(event: MouseEvent<HTMLButtonElement>) {
-    event.preventDefault();
-
-    // only deploy the Greeter contract one time, when a signer is defined
-    if (greeterContract || !signer) {
-      return;
-    }
-
-    async function deployGreeterContract(signer: Signer): Promise<void> {
-      const Greeter = new ethers.ContractFactory(
-        GreeterArtifact.abi,
-        GreeterArtifact.bytecode,
-        signer
-      );
-
-      try {
-        const greeterContract = await Greeter.deploy('Hello, Hardhat!');
-
-        await greeterContract.deployed();
-
-        const greeting = await greeterContract.greet();
-
-        setGreeterContract(greeterContract);
-        setGreeting(greeting);
-
-        window.alert(`Greeter deployed to: ${greeterContract.address}`);
-
-        setGreeterContractAddr(greeterContract.address);
-      } catch (error: any) {
-        window.alert(
-          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
-        );
-      }
-    }
-
-    deployGreeterContract(signer);
-  }
-
-  function handleGreetingChange(event: ChangeEvent<HTMLInputElement>): void {
-    event.preventDefault();
-    setGreetingInput(event.target.value);
-  }
-
-  function handleGreetingSubmit(event: MouseEvent<HTMLButtonElement>): void {
-    event.preventDefault();
-
-    if (!greeterContract) {
-      window.alert('Undefined greeterContract');
-      return;
-    }
-
-    if (!greetingInput) {
-      window.alert('Greeting cannot be empty');
-      return;
-    }
-
-    async function submitGreeting(greeterContract: Contract): Promise<void> {
-      try {
-        const setGreetingTxn = await greeterContract.setGreeting(greetingInput);
-
-        await setGreetingTxn.wait();
-
-        const newGreeting = await greeterContract.greet();
-        window.alert(`Success!\n\nGreeting is now: ${newGreeting}`);
-
-        if (newGreeting !== greeting) {
-          setGreeting(newGreeting);
-        }
-      } catch (error: any) {
-        window.alert(
-          'Error!' + (error && error.message ? `\n\n${error.message}` : '')
-        );
-      }
-    }
-
-    submitGreeting(greeterContract);
-  }
-
   return (
     <>
-      {/* <StyledDeployContractButton
-        disabled={!active || greeterContract ? true : false}
-        style={{
-          cursor: !active || greeterContract ? 'not-allowed' : 'pointer',
-          borderColor: !active || greeterContract ? 'unset' : 'blue'
-        }}
-        onClick={handleDeployContract}
-      >
-        Deploy Greeter Contract
-      </StyledDeployContractButton> */}
-      {/* <SectionDivider /> */}
       <StyledGreetingDiv>
         <div>
           Solana
           <StyledButton
-            onClick={sendInputToCartesiRollups}
+            onClick={createAccountInfoInsideCartesi}
           >
             Create Account
           </StyledButton>

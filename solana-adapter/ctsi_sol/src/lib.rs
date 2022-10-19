@@ -8,42 +8,6 @@ pub mod anchor_lang;
 pub mod anchor_spl;
 pub mod owner_manager;
 
-pub struct Clock {
-    pub unix_timestamp: i64,
-}
-
-impl Clock {
-    pub fn get() -> Result<Clock> {
-        Ok(Clock {
-            unix_timestamp: 123,
-        })
-    }
-}
-
-#[derive(Default, Serialize, Deserialize)]
-pub struct Rent {}
-impl Rent {
-    pub fn get() -> core::result::Result<anchor_lang::prelude::Rent, ProgramError> {
-        Ok(anchor_lang::prelude::Rent {
-            lamports_per_byte_year: 1,
-            exemption_threshold: 0.1,
-            burn_percent: 1,
-        })
-    }
-}
-impl SysvarId for Rent {
-    fn id() -> Pubkey { 
-        Pubkey::default()
-    }
-    fn check_id(_: &Pubkey) -> bool { 
-        true
-    }
-}
-
-impl<'a, 'b> anchor_lang::prelude::SolanaSysvar for Rent {
-    
-}
-
 pub struct AccountManager {
     base_path: String,
 }

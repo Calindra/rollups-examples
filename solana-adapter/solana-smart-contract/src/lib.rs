@@ -1,10 +1,9 @@
-use ctsi_sol::anchor_lang::{self, prelude::*};
 use ctsi_sol::anchor_lang::solana_program::system_program;
-use ctsi_sol::anchor_spl::token::{self, Transfer, Mint, TokenAccount};
-use ctsi_sol::anchor_spl;
-use ctsi_sol::Clock;
-use ctsi_sol::Rent;
-
+use ctsi_sol::anchor_lang::{self, prelude::*};
+use ctsi_sol::anchor_spl::{
+    self,
+    token::{self, Mint, TokenAccount, Transfer},
+};
 
 pub mod models;
 
@@ -51,18 +50,19 @@ pub mod solzen {
     }
 
     pub fn init_wallet(ctx: Context<InitWallet>) -> Result<()> {
-
         // take the ownership of this TokenAccount
         let cpi_accounts = anchor_spl::token::SetAuthority {
             account_or_mint: ctx.accounts.escrow_wallet.to_account_info(),
             current_authority: ctx.accounts.user_sending.to_account_info(),
         };
         let cpi_context = CpiContext::new(ctx.accounts.token_program.clone(), cpi_accounts);
-        let (vault_authority, _bump) =
-            Pubkey::find_program_address(&[
+        let (vault_authority, _bump) = Pubkey::find_program_address(
+            &[
                 WALLET_PDA_SEED,
-                ctx.accounts.mint.to_account_info().key.as_ref()
-            ], ctx.program_id);
+                ctx.accounts.mint.to_account_info().key.as_ref(),
+            ],
+            ctx.program_id,
+        );
         anchor_spl::token::set_authority(
             cpi_context,
             anchor_spl::token::spl_token::instruction::AuthorityType::AccountOwner,
@@ -72,10 +72,7 @@ pub mod solzen {
     }
 
     pub fn transfer(ctx: Context<TransferInstruction>, amount: u64, nonce: u8) -> Result<()> {
-        let seeds = &[
-            ctx.accounts.mint.to_account_info().key.as_ref(),
-            &[nonce],
-        ];
+        let seeds = &[ctx.accounts.mint.to_account_info().key.as_ref(), &[nonce]];
         let signer = &[&seeds[..]];
         let cpi_accounts = Transfer {
             from: ctx.accounts.from.to_account_info(),
@@ -90,11 +87,7 @@ pub mod solzen {
         Ok(())
     }
 
-    pub fn update(
-        ctx: Context<UpdateDAO>,
-        token: Pubkey,
-        min_balance: u64,
-    ) -> Result<()> {
+    pub fn update(ctx: Context<UpdateDAO>, token: Pubkey, min_balance: u64) -> Result<()> {
         msg!("Updating...");
         // TODO: we need to check the founder...
         let _founder: &Signer = &ctx.accounts.founder;
@@ -310,7 +303,6 @@ pub struct TransferInstruction<'info> {
 
 #[derive(Accounts)]
 pub struct InitWallet<'info> {
-
     #[account(
         init,
         payer = user_sending,
@@ -327,7 +319,7 @@ pub struct InitWallet<'info> {
     // Users and accounts in the system
     #[account(mut)]
     user_sending: Signer<'info>, // Alice
-    mint: Account<'info, Mint>,  // USDC
+    mint: Account<'info, Mint>, // USDC
 
     /// CHECK: We already know its address and that it's executable
     #[account(executable, constraint = token_program.key == &token::ID)]

@@ -136,10 +136,6 @@ class AnchorProviderAdapter extends AnchorProvider {
         console.log('Cartesi Rollups payload', payload);
         const inputBytes = ethers.utils.toUtf8Bytes(payload);
 
-        // from 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
-        // const wrongPayload = 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIFAAAAAAAAAAAAAAAAvJNC+hI94JnSXVgr+gCptt3NRDw9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW78nAYd9kNg2rGrty1ESsN3y0XBlH2zXW4vAMvAJr1+HiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUcI9l4X489OvLVWf8xlbVUs4meAJz9NSXh9AedsP2engAQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw=='
-        // const inputBytes = ethers.utils.toUtf8Bytes(wrongPayload);
-
         if (this.etherSigner) {
             const { inputContract } = await cartesiRollups(this.etherSigner);
 
@@ -159,12 +155,13 @@ class AnchorProviderAdapter extends AnchorProvider {
 }
 
 export async function pollingReportResults(receipt: ContractReceipt) {
-    const epochAndInput = getInputKeys(receipt)
-    console.log(`epochAndInput: ${JSON.stringify(epochAndInput, null, 4)}`);
-    for (let i = 0; i < 5; i++) {
+    const MAX_REQUESTS = 10;
+    const inputKeys = getInputKeys(receipt);
+    console.log(`InputKeys: ${JSON.stringify(inputKeys, null, 4)}`);
+    for (let i = 0; i < MAX_REQUESTS; i++) {
         await delay(1000 * (i + 1));
-        const reports = await getReports(DEFAULT_REPORT_URL, epochAndInput);
-        console.log({ reports });
+        const reports = await getReports(DEFAULT_REPORT_URL, inputKeys);
+        console.log(`Cartesi reports: ${JSON.stringify(reports, null, 4)}`);
         if (reports.length > 0) {
             return reports.map(r => {
                 const strJson = ethers.utils.toUtf8String(r.payload);

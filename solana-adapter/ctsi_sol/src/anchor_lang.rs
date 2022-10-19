@@ -1,12 +1,12 @@
 pub use anchor_lang::*;
 
-// Replacing the 
+// Replacing the
 // anchor_lang::system_program::create_account
 pub mod system_program {
     use anchor_lang::prelude::{CpiContext, Pubkey, Result};
     // use anchor_lang::solana_program;
-    pub use anchor_lang::system_program::*;
     use crate::owner_manager;
+    pub use anchor_lang::system_program::*;
 
     pub fn create_account<'a, 'b, 'c, 'info>(
         ctx: CpiContext<'a, 'b, 'c, 'info, CreateAccount<'info>>,
@@ -38,9 +38,13 @@ pub mod solana_program {
     pub use ::anchor_lang::solana_program::*;
 
     pub mod system_instruction {
-        use anchor_lang::{system_program::{Allocate, CreateAccount}, prelude::{Pubkey, CpiContext}, solana_program};
         use anchor_lang::prelude::Result;
         pub use anchor_lang::solana_program::system_instruction::*;
+        use anchor_lang::{
+            prelude::{CpiContext, Pubkey},
+            solana_program,
+            system_program::{Allocate, CreateAccount},
+        };
 
         pub fn allocate<'a, 'b, 'c, 'info>(
             ctx: CpiContext<'a, 'b, 'c, 'info, Allocate<'info>>,
@@ -145,6 +149,45 @@ pub mod solana_program {
         //     // .map_err(Into::into)
         //     Ok(())
         // }
-
     }
+}
+
+pub mod prelude {
+    pub use ::anchor_lang::prelude::*;
+    use ::anchor_lang::solana_program::sysvar::SysvarId;
+    use serde::{Deserialize, Serialize};
+
+    pub struct Clock {
+        pub unix_timestamp: i64,
+    }
+
+    impl Clock {
+        pub fn get() -> Result<Clock> {
+            Ok(Clock {
+                unix_timestamp: 123,
+            })
+        }
+    }
+
+    #[derive(Default, Serialize, Deserialize)]
+    pub struct Rent {}
+    impl Rent {
+        pub fn get() -> core::result::Result<anchor_lang::prelude::Rent, ProgramError> {
+            Ok(anchor_lang::prelude::Rent {
+                lamports_per_byte_year: 1,
+                exemption_threshold: 0.1,
+                burn_percent: 1,
+            })
+        }
+    }
+    impl SysvarId for Rent {
+        fn id() -> Pubkey {
+            Pubkey::default()
+        }
+        fn check_id(_: &Pubkey) -> bool {
+            true
+        }
+    }
+
+    impl<'a, 'b> anchor_lang::prelude::SolanaSysvar for Rent {}
 }
