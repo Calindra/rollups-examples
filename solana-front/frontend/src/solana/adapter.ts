@@ -104,6 +104,11 @@ class AnchorProviderAdapter extends AnchorProvider {
         const payload = toBuffer(rawTx).toString('base64');
         console.log('Cartesi Rollups payload', payload);
         const inputBytes = ethers.utils.toUtf8Bytes(payload);
+
+        // from 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
+        // const wrongPayload = 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIFAAAAAAAAAAAAAAAAvJNC+hI94JnSXVgr+gCptt3NRDw9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW78nAYd9kNg2rGrty1ESsN3y0XBlH2zXW4vAMvAJr1+HiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUcI9l4X489OvLVWf8xlbVUs4meAJz9NSXh9AedsP2engAQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw=='
+        // const inputBytes = ethers.utils.toUtf8Bytes(wrongPayload);
+        
         if (this.etherSigner) {
             const { inputContract } = await cartesiRollups(this.etherSigner);
 

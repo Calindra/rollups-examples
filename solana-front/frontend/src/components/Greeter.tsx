@@ -338,7 +338,7 @@ export function Greeter(): ReactElement {
 
   return (
     <>
-      <StyledDeployContractButton
+      {/* <StyledDeployContractButton
         disabled={!active || greeterContract ? true : false}
         style={{
           cursor: !active || greeterContract ? 'not-allowed' : 'pointer',
@@ -347,43 +347,9 @@ export function Greeter(): ReactElement {
         onClick={handleDeployContract}
       >
         Deploy Greeter Contract
-      </StyledDeployContractButton>
-      <SectionDivider />
+      </StyledDeployContractButton> */}
+      {/* <SectionDivider /> */}
       <StyledGreetingDiv>
-        <StyledLabel>Contract addr</StyledLabel>
-        <div>
-          {greeterContractAddr ? (
-            greeterContractAddr
-          ) : (
-            <em>{`<Contract not yet deployed>`}</em>
-          )}
-        </div>
-        {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
-        <div></div>
-        <StyledLabel>Current greeting</StyledLabel>
-        <div>
-          {greeting ? greeting : <em>{`<Contract not yet deployed>`}</em>}
-        </div>
-        {/* empty placeholder div below to provide empty first row, 3rd col div for a 2x3 grid */}
-        <div></div>
-        <StyledLabel htmlFor="greetingInput">Set new greeting</StyledLabel>
-        <StyledInput
-          id="greetingInput"
-          type="text"
-          placeholder={greeting ? '' : '<Contract not yet deployed>'}
-          onChange={handleGreetingChange}
-          style={{ fontStyle: greeting ? 'normal' : 'italic' }}
-        ></StyledInput>
-        <StyledButton
-          disabled={!active || !greeterContract ? true : false}
-          style={{
-            cursor: !active || !greeterContract ? 'not-allowed' : 'pointer',
-            borderColor: !active || !greeterContract ? 'unset' : 'blue'
-          }}
-          onClick={handleGreetingSubmit}
-        >
-          Submit
-        </StyledButton>
         <div>
           Solana
           <StyledButton
