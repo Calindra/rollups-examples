@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { AccountInfo, clusterApiUrl, Commitment, ConfirmOptions, Connection, GetAccountInfoConfig, Keypair, PublicKey, SerializeConfig, Signer, Transaction, TransactionSignature } from "@solana/web3.js";
 import { Buffer } from 'buffer';
-import { ethers } from 'ethers';
+import { ContractReceipt, ethers } from 'ethers';
+import { InputAddedEvent } from "@cartesi/rollups/dist/src/types/contracts/interfaces/IInput";
 
 import * as anchor from "@project-serum/anchor";
 import idl from './models/solzen.json';
@@ -9,7 +10,10 @@ import { AnchorProvider, Program } from "@project-serum/anchor";
 import { Solzen } from "./models/solzen";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
 import { cartesiRollups } from "../utils/cartesi";
+import { getReports } from "./graphql/reports";
 
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const DEFAULT_REPORT_URL = "http://localhost:4000/graphql";
 export const programID = new PublicKey(idl.metadata.address);
 const encoder = new TextEncoder()
 
@@ -79,6 +83,33 @@ class AdaptedWallet implements Wallet {
     }
 }
 
+export type InputKeys = {
+    epoch_index?: number;
+    input_index?: number;
+};
+
+/**
+ * Retrieve InputKeys from an InputAddedEvent
+ * @param receipt Blockchain transaction receipt
+ * @returns input identification keys
+ */
+export const getInputKeys = (receipt: ContractReceipt): InputKeys => {
+    // get InputAddedEvent from transaction receipt
+    const event = receipt.events?.find((e) => e.event === "InputAdded");
+
+    if (!event) {
+        throw new Error(
+            `InputAdded event not found in receipt of transaction ${receipt.transactionHash}`
+        );
+    }
+
+    const inputAdded = event as InputAddedEvent;
+    return {
+        epoch_index: inputAdded.args.epochNumber.toNumber(),
+        input_index: inputAdded.args.inputIndex.toNumber(),
+    };
+};
+
 class AnchorProviderAdapter extends AnchorProvider {
     public etherSigner: ethers.Signer | undefined
 
@@ -108,7 +139,7 @@ class AnchorProviderAdapter extends AnchorProvider {
         // from 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC
         // const wrongPayload = 'AQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIFAAAAAAAAAAAAAAAAvJNC+hI94JnSXVgr+gCptt3NRDw9c+ndk0/3nYBv5IL0AYCdTFv3mclqsrWNe8g7zMKW78nAYd9kNg2rGrty1ESsN3y0XBlH2zXW4vAMvAJr1+HiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUy4Hb7mSWFQTbYEIchzRyZVRLl4KLQEuaiG+hVkKvUcI9l4X489OvLVWf8xlbVUs4meAJz9NSXh9AedsP2engAQQEAQIAAzivr20fDZib7awePxMEdMwUsv7P4+23SFy4GOfkeXuwWPj1MMZHa6Xu6AMAAAAAAAAEAAAAc2x1Zw=='
         // const inputBytes = ethers.utils.toUtf8Bytes(wrongPayload);
-        
+
         if (this.etherSigner) {
             const { inputContract } = await cartesiRollups(this.etherSigner);
 
@@ -117,11 +148,33 @@ class AnchorProviderAdapter extends AnchorProvider {
             console.log(`transaction: ${txEth.hash}`);
             console.log("waiting for confirmation...");
             const receipt = await txEth.wait(1);
-            console.log(`receipt: ${JSON.stringify(receipt, null, 4)}`);
+            const inputReportResults = await pollingReportResults(receipt);
+            console.log({ inputReportResults })
+            if (inputReportResults?.find(report => report.json.error)) {
+                throw new Error('Unexpected error');
+            }
         }
         return { ok: 1 } as any
     }
+}
 
+export async function pollingReportResults(receipt: ContractReceipt) {
+    const epochAndInput = getInputKeys(receipt)
+    console.log(`epochAndInput: ${JSON.stringify(epochAndInput, null, 4)}`);
+    for (let i = 0; i < 5; i++) {
+        await delay(1000 * (i + 1));
+        const reports = await getReports(DEFAULT_REPORT_URL, epochAndInput);
+        console.log({ reports });
+        if (reports.length > 0) {
+            return reports.map(r => {
+                const strJson = ethers.utils.toUtf8String(r.payload);
+                return {
+                    ...r,
+                    json: JSON.parse(strJson)
+                };
+            })
+        }
+    }
 }
 
 class ConnectionAdapter extends Connection {
@@ -136,7 +189,7 @@ class ConnectionAdapter extends Connection {
             host = host.replace(/^[0-9]*/, '5005');
         } else {
             // localhost like
-            host = host.replace(/:[0-9]+$/,':5005')
+            host = host.replace(/:[0-9]+$/, ':5005')
         }
         const url = `${protocol}//${host}/inspect/${publicKey.toBase58()}`;
         console.log('Cartesi inspect url', url);

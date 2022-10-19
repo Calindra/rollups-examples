@@ -129,6 +129,16 @@ pub async fn handle_advance(
     let contract_response = call_smart_contract(&payload, &msg_sender);
     match contract_response {
         Ok(_) => {
+            println!("Sending ok report!");
+            let ok_result = hex::encode("{\"ok\":1}");
+            let notice = object! {"payload" => format!("0x{}", ok_result)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/report", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
             println!("Adding notice");
             let notice = object! {"payload" => format!("{}", payload)};
             let req = hyper::Request::builder()
@@ -142,8 +152,9 @@ pub async fn handle_advance(
         }
         Err(_error) => {
             // TODO: retornar um erro detalhado
-            println!("Adding report!");
-            let notice = object! {"payload" => format!("{}", payload)};
+            println!("Sending error report!");
+            let error_details = hex::encode("{\"error\":1}");
+            let notice = object! {"payload" => format!("0x{}", error_details)};
             let req = hyper::Request::builder()
                 .method(hyper::Method::POST)
                 .header(hyper::header::CONTENT_TYPE, "application/json")
