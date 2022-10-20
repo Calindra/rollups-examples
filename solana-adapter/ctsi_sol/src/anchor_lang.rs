@@ -2,6 +2,7 @@ pub use anchor_lang::*;
 
 // Replacing the
 // anchor_lang::system_program::create_account
+#[cfg(not(target_arch = "bpf"))]
 pub mod system_program {
     use anchor_lang::prelude::{CpiContext, Pubkey, Result};
     // use anchor_lang::solana_program;
@@ -34,6 +35,7 @@ pub mod system_program {
     }
 }
 
+#[cfg(not(target_arch = "bpf"))]
 pub mod solana_program {
     pub use ::anchor_lang::solana_program::*;
 
@@ -152,6 +154,7 @@ pub mod solana_program {
     }
 }
 
+#[cfg(not(target_arch = "bpf"))]
 pub mod prelude {
     pub use ::anchor_lang::prelude::*;
     use ::anchor_lang::solana_program::sysvar::SysvarId;

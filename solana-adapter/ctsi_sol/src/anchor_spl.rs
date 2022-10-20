@@ -45,6 +45,7 @@ impl NativeAccountData {
     }
 }
 
+#[cfg(not(target_arch = "bpf"))]
 pub mod token {
 
     use anchor_lang::{prelude::{CpiContext, Result}, solana_program::program_pack::Pack};
