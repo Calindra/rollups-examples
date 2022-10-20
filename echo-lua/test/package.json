@@ -1,6 +1,6 @@
 {
     "name": "echo-test",
-    "version": "0.9.1",
+    "version": "0.8.1",
     "description": "Tests for Echo DApp",
     "author": "Victor Yves Crispim <victor.yves@cartesi.io>",
     "license": "Apache-2.0",
@@ -8,8 +8,8 @@
         "generateTypes": "proto-loader-gen-types --grpcLib @grpc/grpc-js --outDir generated-src/proto ../../grpc-interfaces/server-manager.proto",
         "buildImages": "cd .. && docker buildx bake",
         "setupConsole": "cd ../.. && cd frontend-console && yarn install && yarn build",
-        "startBackend": "cd .. && python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt && ROLLUP_HTTP_SERVER_URL=http://127.0.0.1:5004 python3 echo.py > .env/echo.log 2>&1 &",
-        "cleanEnvironment": "cd .. && rm -rf .venv",
+        "startBackend": "cd .. && luarocks install luasocket --local && luarocks install lpeg --local && luarocks install dkjson --local && eval $(luarocks path) && ROLLUP_HTTP_SERVER_URL=http://127.0.0.1:5004 lua5.3 echo.lua > echo.log 2>&1 &",
+        "cleanEnvironment": "cd .. && rm -rf .env",
         "prepareEnvironment": "yarn generateTypes && yarn setupConsole && yarn buildImages",
         "startEnvironment:prod": "cd .. && docker-compose -f ../docker-compose.yml -f docker-compose.override.yml up -d",
         "startEnvironment:host": "cd .. && docker-compose -f ../docker-compose.yml -f docker-compose.override.yml -f ../docker-compose-host.yml up -d && cd test",
