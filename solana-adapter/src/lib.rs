@@ -1,11 +1,11 @@
-use ctsi_sol::anchor_lang::prelude::{AccountInfo, Pubkey};
-use ctsi_sol::{owner_manager, AccountFileData, AccountManager};
+use ctsi_sol::anchor_lang::prelude::{ Pubkey};
+use ctsi_sol::{AccountManager};
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use std::{cell::RefCell, rc::Rc, str::FromStr};
-use transaction::Signature;
+use std::{str::FromStr};
 
 pub mod transaction;
 
@@ -19,7 +19,7 @@ where
     let response_status = response.status().as_u16();
     let response_body = hyper::body::to_bytes(response).await?;
     println!(
-        "Received notice status {} body {}",
+        "Received notice status[{}] body[{}]",
         response_status,
         std::str::from_utf8(&response_body)?
     );
@@ -41,46 +41,6 @@ fn create_account_manager() -> AccountManager {
     };
 }
 
-fn load_account_info_data(pubkey: &Pubkey) -> (Vec<u8>, u64, Pubkey) {
-    let account_manager = create_account_manager();
-    const MAX_SIZE: usize = 2000;
-    let mut lamports = 1000;
-    let read_account_data_file = account_manager.read_account(&pubkey);
-    match read_account_data_file {
-        Ok(account_data_file) => {
-            return (
-                account_data_file.data,
-                account_data_file.lamports,
-                account_data_file.owner,
-            )
-        }
-        Err(_) => {
-            let zeroes: [u8; MAX_SIZE] = [0; MAX_SIZE];
-            let mut info_data = zeroes.to_vec();
-            let mut owner: Pubkey = solana_smart_contract::ID;
-            if pubkey.to_string() == "6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY" {
-                // owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
-                lamports = 0;
-                let zeroes: [u8; 165] = [0; 165];
-                info_data = zeroes.to_vec();
-            }
-            if pubkey.to_string() == "4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV" {
-                println!("Mint not found");
-                owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
-                info_data = vec![
-                    1, 0, 0, 0, 175, 35, 124, 60, 86, 42, 49, 153, 12, 90, 41, 181, 244, 158, 219,
-                    93, 35, 126, 32, 99, 96, 228, 221, 154, 226, 15, 253, 35, 204, 138, 183, 90, 0,
-                    0, 0, 0, 0, 0, 0, 0, 9, 1, 1, 0, 0, 0, 175, 35, 124, 60, 86, 42, 49, 153, 12,
-                    90, 41, 181, 244, 158, 219, 93, 35, 126, 32, 99, 96, 228, 221, 154, 226, 15,
-                    253, 35, 204, 138, 183, 90,
-                ];
-                //info_data = zeroes.to_vec();
-            }
-            return (info_data, lamports, owner);
-        }
-    };
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct AccountJson {
     key: String,
@@ -89,24 +49,35 @@ pub struct AccountJson {
     lamports: String,
 }
 
-pub fn read_account_info_as_json(pubkey_str: &str) -> String {
+pub fn read_account_info_as_json(pubkey_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let pubkey = Pubkey::from_str(pubkey_str).unwrap();
     let account_manager = create_account_manager();
-    let account_file_data = account_manager.read_account(&pubkey).unwrap();
+    let account_file_data = account_manager.read_account(&pubkey)?;
+
     let account_json = AccountJson {
         key: pubkey_str.to_string(),
         owner: Pubkey::from(account_file_data.owner).to_string(),
         data: base64::encode(account_file_data.data),
         lamports: account_file_data.lamports.to_string(),
     };
-    serde_json::to_string(&account_json).unwrap()
+    Ok(serde_json::to_string(&account_json).unwrap())
 }
 
-fn check_signature(pubkey: &Pubkey, sender_bytes: &[u8], _signature: &Signature) -> bool {
-    sender_bytes == &pubkey.to_bytes()[12..]
+#[derive(Debug)]
+pub enum ContractError {
+    UnexpectedError,
+}
+impl std::error::Error for ContractError {}
+
+impl fmt::Display for ContractError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ContractError::UnexpectedError => write!(f, "Contract Error"),
+        }
+    }
 }
 
-pub fn call_smart_contract(payload: &str, msg_sender: &str) {
+pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), ContractError> {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(&encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
@@ -124,9 +95,23 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) {
         child_stdin.write_all(b"\n").unwrap();
         drop(child_stdin);
         let output = child.wait_with_output().unwrap();
-
         println!("output = {:?}", output);
+        let opt_exit_code = output.status.code();
+        match opt_exit_code {
+            Some(exit_code) => {
+                if exit_code == 0 {
+                    println!("Success!!!")
+                } else {
+                    return Err(ContractError::UnexpectedError);
+                }
+            }
+            None => {
+                println!("Unexpected error");
+                return Err(ContractError::UnexpectedError);
+            }
+        }
     }
+    Ok(())
 }
 
 pub async fn handle_advance(
@@ -141,17 +126,45 @@ pub async fn handle_advance(
     let msg_sender = request["data"]["metadata"]["msg_sender"]
         .as_str()
         .ok_or("Missing msg_sender")?;
-    println!("Adding notice");
-    call_smart_contract(&payload, &msg_sender);
-    let notice = object! {"payload" => format!("{}", payload)};
-    let req = hyper::Request::builder()
-        .method(hyper::Method::POST)
-        .header(hyper::header::CONTENT_TYPE, "application/json")
-        .uri(format!("{}/notice", server_addr))
-        .body(hyper::Body::from(notice.dump()))?;
-    let response = client.request(req).await?;
-    print_response(response).await?;
-    Ok("accept")
+    let contract_response = call_smart_contract(&payload, &msg_sender);
+    match contract_response {
+        Ok(_) => {
+            println!("Sending ok report!");
+            let ok_result = hex::encode("{\"ok\":1}");
+            let notice = object! {"payload" => format!("0x{}", ok_result)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/report", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            println!("Adding notice");
+            let notice = object! {"payload" => format!("{}", payload)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/notice", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            Ok("accept")
+        }
+        Err(_error) => {
+            // TODO: retornar um erro detalhado
+            println!("Sending error report!");
+            let error_details = hex::encode("{\"error\":1}");
+            let notice = object! {"payload" => format!("0x{}", error_details)};
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/report", server_addr))
+                .body(hyper::Body::from(notice.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            Ok("reject")
+        }
+    }
 }
 
 pub async fn handle_inspect(
@@ -169,15 +182,20 @@ pub async fn handle_inspect(
     let hex_decoded = hex::decode(&payload[2..]).unwrap();
     let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
     println!("read pubkey {}", pubkey_str);
-    let account_data = read_account_info_as_json(&pubkey_str);
-    let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
+    let account_data_res = read_account_info_as_json(&pubkey_str);
+    match account_data_res {
+        Ok(account_data) => {
+            let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
 
-    let req = hyper::Request::builder()
-        .method(hyper::Method::POST)
-        .header(hyper::header::CONTENT_TYPE, "application/json")
-        .uri(format!("{}/report", server_addr))
-        .body(hyper::Body::from(report.dump()))?;
-    let response = client.request(req).await?;
-    print_response(response).await?;
-    Ok("accept")
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/report", server_addr))
+                .body(hyper::Body::from(report.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+            Ok("accept")
+        },
+        Err(_) => Ok("reject"),
+    }
 }
