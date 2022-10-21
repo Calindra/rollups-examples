@@ -1,11 +1,11 @@
-use ctsi_sol::anchor_lang::prelude::{ Pubkey};
-use ctsi_sol::{AccountManager};
+use ctsi_sol::anchor_lang::prelude::Pubkey;
+use ctsi_sol::owner_manager::AccountManager;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::Write;
 use std::process::{Command, Stdio};
-use std::{str::FromStr};
+use std::str::FromStr;
 
 pub mod transaction;
 
@@ -81,6 +81,7 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), Contra
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(&encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
+    let mut instruction_index: usize = 0;
     for tx_instruction in &tx.message.instructions {
         let pidx: usize = (tx_instruction.program_id_index).into();
         let program_id = tx.message.account_keys[pidx];
@@ -93,6 +94,11 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), Contra
         child_stdin.write_all(b"\n").unwrap();
         child_stdin.write_all(&encoded64).unwrap();
         child_stdin.write_all(b"\n").unwrap();
+        child_stdin
+            .write_all(&instruction_index.to_string().as_bytes())
+            .unwrap();
+        child_stdin.write_all(b"\n").unwrap();
+
         drop(child_stdin);
         let output = child.wait_with_output().unwrap();
         println!("output = {:?}", output);
@@ -110,6 +116,7 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), Contra
                 return Err(ContractError::UnexpectedError);
             }
         }
+        instruction_index += 1;
     }
     Ok(())
 }
@@ -195,7 +202,7 @@ pub async fn handle_inspect(
             let response = client.request(req).await?;
             print_response(response).await?;
             Ok("accept")
-        },
+        }
         Err(_) => Ok("reject"),
     }
 }

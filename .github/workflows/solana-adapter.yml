@@ -31,7 +31,7 @@ jobs:
                 toolchain: nightly
             - run: |
                 cd ${{ github.workspace }} && cd ./solana-adapter && \
-                cd stdio_call && cargo build --release && \
-                cp ./target/release/stdio_call ../solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv && \
+                cd solana-smart-contract && cargo build --release && \
+                cp ./target/release/solana_smart_contract ../solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv && \
                 cd ../ && \
                 cargo test -- --nocapture --test-threads 1
