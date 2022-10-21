@@ -68,12 +68,13 @@ mod _private {
             Err(_) => {
                 let zeroes: [u8; MAX_SIZE] = [0; MAX_SIZE];
                 let mut info_data = zeroes.to_vec();
-                let mut owner: Pubkey = Pubkey::default();
+                let mut owner: Pubkey = anchor_lang::solana_program::system_program::ID.clone();
                 if pubkey.to_string() == "6Tw6Z6SsM3ypmGsB3vpSx8midhhyTvTwdPd7K413LyyY" {
                     // owner = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
                     lamports = 0;
                     let zeroes: [u8; 165] = [0; 165];
                     info_data = zeroes.to_vec();
+                    return (info_data, lamports, owner);
                 }
                 if pubkey.to_string() == "4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV" {
                     println!("Mint not found");
@@ -87,7 +88,9 @@ mod _private {
                         221, 154, 226, 15, 253, 35, 204, 138, 183, 90,
                     ];
                     //info_data = zeroes.to_vec();
+                    return (info_data, lamports, owner);
                 }
+                lamports = 0;
                 return (info_data, lamports, owner);
             }
         };

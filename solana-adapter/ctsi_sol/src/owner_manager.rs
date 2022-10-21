@@ -2,7 +2,7 @@ use std::fs;
 use ::anchor_lang::prelude::Pubkey;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-
+use std::io::ErrorKind::NotFound;
 pub static mut OWNERS: Lazy<Vec<Pubkey>> = Lazy::new(|| vec![]);
 
 /*
@@ -87,8 +87,19 @@ impl AccountManager {
         pubkey: &Pubkey,
     ) -> std::result::Result<(), Box<dyn std::error::Error>> {
         let file_path = format!("{}/{}.json", &self.base_path, pubkey.to_string());
-        fs::remove_file(file_path)?;
-        Ok(())
+        let delete_result = fs::remove_file(file_path);
+        match delete_result {
+            Ok(_) => {
+                return Ok(());
+            },
+            Err(error) => {
+                if error.kind() == NotFound {
+                    return Ok(())
+                } else {
+                    return Err(Box::new(error))
+                }
+            },
+        }
     }
 }
 

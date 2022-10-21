@@ -17,6 +17,8 @@ pub mod system_program {
     ) -> Result<()> {
         anchor_lang::prelude::msg!("Inside lang system_program create_account...");
         owner_manager::change_owner(ctx.accounts.to.key.clone(), owner.clone());
+        // TODO: check the correct amount
+        **ctx.accounts.to.try_borrow_mut_lamports()? += 100000;
 
         // let ix = solana_program::system_instruction::create_account(
         //     ctx.accounts.from.key,
@@ -39,6 +41,39 @@ pub mod system_program {
 pub mod solana_program {
     pub use ::anchor_lang::solana_program::*;
 
+    // anchor_lang::solana_program::program::invoke_signed
+    pub mod program {
+        pub use ::anchor_lang::solana_program::program::*;
+        use anchor_lang::{
+            prelude::AccountInfo,
+            solana_program::{entrypoint::ProgramResult, instruction::Instruction},
+        };
+        pub fn invoke_signed(
+            instruction: &Instruction,
+            account_infos: &[AccountInfo],
+            _signers_seeds: &[&[&[u8]]],
+        ) -> ProgramResult {
+            anchor_lang::prelude::msg!("anchor_lang::solana_program::program::invoke_signed...");
+            // Check that the account RefCells are consistent with the request
+            for account_meta in instruction.accounts.iter() {
+                for account_info in account_infos.iter() {
+                    if account_meta.pubkey == *account_info.key {
+                        if account_meta.is_writable {
+                            let _ = account_info.try_borrow_mut_lamports()?;
+                            let _ = account_info.try_borrow_mut_data()?;
+                        } else {
+                            let _ = account_info.try_borrow_lamports()?;
+                            let _ = account_info.try_borrow_data()?;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            //invoke_signed_unchecked(instruction, account_infos, signers_seeds)
+            Ok(())
+        }
+    }
     pub mod system_instruction {
         use anchor_lang::prelude::Result;
         pub use anchor_lang::solana_program::system_instruction::*;
@@ -87,70 +122,6 @@ pub mod solana_program {
             )
             .map_err(Into::into)
         }
-
-        // // pub fn create_account_with_seed<'a, 'b, 'c, 'info>(
-        // //     ctx: CpiContext<'a, 'b, 'c, 'info, CreateAccountWithSeed<'info>>,
-        // //     seed: &str,
-        // //     lamports: u64,
-        // //     space: u64,
-        // //     owner: &Pubkey,
-        // // ) -> Result<()> {
-        // //     println!("create_account_with_seed");
-
-        // //     let ix = solana_program::system_instruction::create_account_with_seed(
-        // //         ctx.accounts.from.key,
-        // //         ctx.accounts.to.key,
-        // //         ctx.accounts.base.key,
-        // //         seed,
-        // //         lamports,
-        // //         space,
-        // //         owner,
-        // //     );
-        // //     solana_program::program::invoke_signed(
-        // //         &ix,
-        // //         &[ctx.accounts.from, ctx.accounts.to, ctx.accounts.base],
-        // //         ctx.signer_seeds,
-        // //     )
-        // //     .map_err(Into::into)
-        // //     // Ok(())
-        // // }
-
-        // pub fn assign<'a, 'b, 'c, 'info>(
-        //     ctx: CpiContext<'a, 'b, 'c, 'info, Assign<'info>>,
-        //     owner: &Pubkey,
-        // ) -> Result<()> {
-        //     println!("assign");
-        //     // let ix = crate::solana_program::system_instruction::assign(
-        //     //     ctx.accounts.account_to_assign.key,
-        //     //     owner,
-        //     // );
-        //     // crate::solana_program::program::invoke_signed(
-        //     //     &ix,
-        //     //     &[ctx.accounts.account_to_assign],
-        //     //     ctx.signer_seeds,
-        //     // )
-        //     // .map_err(Into::into)
-        //     Ok(())
-        // }
-
-        // pub fn transfer<'a, 'b, 'c, 'info>(
-        //     ctx: CpiContext<'a, 'b, 'c, 'info, Transfer<'info>>,
-        //     lamports: u64,
-        // ) -> Result<()> {
-        //     println!("Transfer...");
-        //     // let ix = crate::solana_program::system_instruction::transfer(
-        //     //     ctx.accounts.from.key,
-        //     //     ctx.accounts.to.key,
-        //     //     lamports,
-        //     // );
-        //     // crate::solana_program::program::invoke_signed(
-        //     //     &ix,
-        //     //     &[ctx.accounts.from, ctx.accounts.to],
-        //     //     ctx.signer_seeds,
-        //     // )
-        //     // .map_err(Into::into)
-        //     Ok(())
-        // }
     }
 }
 
