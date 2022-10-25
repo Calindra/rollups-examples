@@ -40,12 +40,16 @@ fn it_should_detect_errors() {
     // let msg_sender = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
     let wrong_msg_sender = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb9aaaa";
     let resp = call_smart_contract(&hex_payload, &wrong_msg_sender);
-    match resp {
+    let got_an_error = match resp {
         Ok(_) => panic!("This should return an error!"),
         Err(_) => {
-            // ok
+            println!("*********************************************");
+            println!("********** this error is expected! **********");
+            println!("*********************************************");
+            true
         },
-    }
+    };
+    assert!(got_an_error);
 }
 
 #[test]
