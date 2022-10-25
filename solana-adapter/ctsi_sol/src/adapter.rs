@@ -7,23 +7,26 @@ use self::_private::call_smart_contract_base64;
 pub fn call_solana_program(
     entry: fn(&Pubkey, &[AccountInfo], &[u8]) -> ProgramResult,
 ) -> io::Result<()> {
-    let mut msg_sender = String::new();
-    io::stdin().read_line(&mut msg_sender)?;
-    let mut payload = String::new();
-    io::stdin().read_line(&mut payload)?;
-    let mut instruction_index = String::new();
-    io::stdin().read_line(&mut instruction_index)?;
-    let instruction_index: usize = instruction_index
-        .trim()
-        .parse()
-        .expect("Input is not an integer");
+    #[cfg(not(target_arch = "bpf"))]
+    {
+        let mut msg_sender = String::new();
+        io::stdin().read_line(&mut msg_sender)?;
+        let mut payload = String::new();
+        io::stdin().read_line(&mut payload)?;
+        let mut instruction_index = String::new();
+        io::stdin().read_line(&mut instruction_index)?;
+        let instruction_index: usize = instruction_index
+            .trim()
+            .parse()
+            .expect("Input is not an integer");
 
-    call_smart_contract_base64(
-        &payload[..(&payload.len() - 1)],
-        &msg_sender[..(&msg_sender.len() - 1)],
-        instruction_index,
-        entry,
-    );
+        call_smart_contract_base64(
+            &payload[..(&payload.len() - 1)],
+            &msg_sender[..(&msg_sender.len() - 1)],
+            instruction_index,
+            entry,
+        );
+    }
     Ok(())
 }
 

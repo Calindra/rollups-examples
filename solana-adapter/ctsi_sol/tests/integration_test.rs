@@ -1,14 +1,14 @@
 use std::str::FromStr;
 use std::env;
 
-use anchor_lang::{prelude::Pubkey, solana_program::pubkey};
-use ctsi_sol::AccountManager;
+use anchor_lang::{prelude::Pubkey};
+use ctsi_sol::owner_manager::{AccountManager, AccountFileData};
 
 
 fn create_account_manager(read_from_fixtures: bool) -> AccountManager {
     let dir = env::temp_dir();
     println!("Temporary directory: {}", dir.as_os_str().to_str().unwrap());
-    let mut account_manager = ctsi_sol::AccountManager::new().unwrap();
+    let mut account_manager = AccountManager::new().unwrap();
     if !read_from_fixtures {
         account_manager.set_base_path(dir.as_os_str().to_str().unwrap().to_owned());
     }
@@ -30,7 +30,7 @@ fn it_should_write_an_account_by_public_key() {
     println!("key = {}", pubkey.to_string());
     let mut data = Vec::new();
     data.push(1);
-    let account_file_data = ctsi_sol::AccountFileData {
+    let account_file_data = AccountFileData {
         owner: Pubkey::from_str("EwiqbApgaLT2kQaohqZnSXT9HbkMQWDektXEjXGMJyJv").unwrap(),
         data: data,
         lamports: 123,
@@ -47,7 +47,7 @@ fn it_should_delete_an_account_by_public_key() {
     println!("key = {}", pubkey.to_string());
     let mut data = Vec::new();
     data.push(1);
-    let account_file_data = ctsi_sol::AccountFileData {
+    let account_file_data = AccountFileData {
         owner: Pubkey::from_str("EwiqbApgaLT2kQaohqZnSXT9HbkMQWDektXEjXGMJyJv").unwrap(),
         data: data,
         lamports: 123,
