@@ -246,10 +246,30 @@ export function getProvider(signer?: ethers.Signer) {
 export async function getProgram(signer?: ethers.Signer) {
     const { provider, wallet, connection } = getProvider(signer);
     const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+    if (signer) {
+        const ethAddress = await signer.getAddress();
+        wallet.publicKey = convertEthAddress2Solana(ethAddress);
+        console.log('wallet publicKey changed')
+    }
+    return { program, provider, wallet, connection }
+}
+
+export function useCartesi(signer?: ethers.Signer) {
+    const { provider, wallet, connection } = getProvider(signer);
+    const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+    const [objects, setObjects] = useState({program, provider, wallet, connection});
+    async function changeWalletPublicKey(signer?: ethers.Signer) {
         if (signer) {
             const ethAddress = await signer.getAddress();
             wallet.publicKey = convertEthAddress2Solana(ethAddress);
-            console.log('wallet publicKey changed')
+            console.log(`wallet signer publicKey changed to ${wallet.publicKey.toBase58()}`);
+            const newObj = getProvider(signer);
+            const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+            setObjects({ ...newObj, program, wallet } as any);
         }
-    return { program, provider, wallet, connection }
+    }
+    useEffect(() => {
+        changeWalletPublicKey(signer);
+    }, [signer])
+    return objects
 }

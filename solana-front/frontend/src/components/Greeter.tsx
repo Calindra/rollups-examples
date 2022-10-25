@@ -1,31 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { PublicKey } from '@solana/web3.js';
 import { useWeb3React } from '@web3-react/core';
-import { Contract, ethers, Signer } from 'ethers';
+import { Signer } from 'ethers';
 import { Buffer } from 'buffer';
 import {
-  ChangeEvent,
-  MouseEvent,
   ReactElement,
   useEffect,
   useState
 } from 'react';
 import styled from 'styled-components';
-import GreeterArtifact from '../artifacts/contracts/Greeter.sol/Greeter.json';
-import { getProgram } from '../solana/adapter';
+import { getProgram, useCartesi } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
 import { Provider } from '../utils/provider';
-import { SectionDivider } from './SectionDivider';
-import { createMint, getAccount } from '@solana/spl-token';
-
-const StyledDeployContractButton = styled.button`
-  width: 180px;
-  height: 2rem;
-  border-radius: 1rem;
-  border-color: blue;
-  cursor: pointer;
-  place-self: center;
-`;
+import { getAccount } from '@solana/spl-token';
 
 const StyledGreetingDiv = styled.div`
   display: grid;
@@ -34,15 +21,6 @@ const StyledGreetingDiv = styled.div`
   grid-gap: 10px;
   place-self: center;
   align-items: center;
-`;
-
-const StyledLabel = styled.label`
-  font-weight: bold;
-`;
-
-const StyledInput = styled.input`
-  padding: 0.4rem 0.6rem;
-  line-height: 2fr;
 `;
 
 const StyledButton = styled.button`
@@ -56,16 +34,15 @@ const StyledButton = styled.button`
 export function Greeter(): ReactElement {
   const context = useWeb3React<Provider>();
   const { library } = context;
-
   const [signer, setSigner] = useState<Signer>();
   const [daoAccount, setDaoAccount] = useState<string>('');
   const [tokenAccount, setTokenAccount] = useState<string>('');
+  const { wallet, connection, program } = useCartesi(signer);
+
+  console.log({walletPubKey: wallet?.publicKey?.toBase58()});
 
   async function readTokenAccount() {
-
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
-    // const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
-    const { program, connection } = await getProgram(signer)
     const [escrowWallet, _bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("wallet")),
@@ -87,25 +64,13 @@ export function Greeter(): ReactElement {
 
   async function readMint() {
     const { connection } = await getProgram(signer)
-
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
-    // const tokenProgramAddress = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-    // console.log(tokenProgramAddress.toBuffer());
     const mintInfo = await connection.getAccountInfo(mint);
     console.log(JSON.stringify(mintInfo, null, 4));
   }
 
   async function createEscrowWalletTokenAccount() {
-    const { program } = await getProgram(signer)
-    const fromWallet = anchor.web3.Keypair.generate();
-    // const toWallet = anchor.web3.Keypair.generate();
-    // const signature = await connection.requestAirdrop(fromWallet.publicKey, 1_000_000_000);
-    // await connection.confirmTransaction(signature, 'confirmed');
-    // const mint = await createMint(connection, fromWallet, fromWallet.publicKey, fromWallet.publicKey, 9);
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
-    // const tokenProgramAddress = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-    // console.log(tokenProgramAddress.toBuffer());
-
     const [escrowWallet, bump] = await PublicKey.findProgramAddress(
       [
         Buffer.from(anchor.utils.bytes.utf8.encode("wallet")),
@@ -114,7 +79,6 @@ export function Greeter(): ReactElement {
       program.programId
     );
     console.log('Init wallet...', {
-      from: fromWallet.publicKey.toBase58(),
       escrowWallet: escrowWallet.toBase58(),
       mint: mint.toBase58(),
       bump
@@ -143,7 +107,6 @@ export function Greeter(): ReactElement {
       console.log(`using account "${signerAddress}"`);
 
       const daoSlug = 'slug'
-      const { program, wallet } = await getProgram(signer)
       const mint = new PublicKey("CasshNb6PacBzSwbd5gw8uqoQEjcWxaQ9u9byFApShwT");
 
       const [daoPubkey, _bump1] = await PublicKey.findProgramAddress([
@@ -181,7 +144,6 @@ export function Greeter(): ReactElement {
     }
     try {
       const daoSlug = 'slug'
-      const { program } = await getProgram(signer)
       const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
         anchor.utils.bytes.utf8.encode('dao'),
         Buffer.from(daoSlug.slice(0, 32)),
@@ -201,7 +163,6 @@ export function Greeter(): ReactElement {
     }
     const mint = new PublicKey("So11111111111111111111111111111111111111112");
     const daoSlug = 'slug'
-    const { program } = await getProgram(signer)
     const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
       anchor.utils.bytes.utf8.encode('dao'),
       Buffer.from(daoSlug.slice(0, 32)),
@@ -226,7 +187,6 @@ export function Greeter(): ReactElement {
       return;
     }
     const daoSlug = 'slug'
-    const { program } = await getProgram(signer)
     const [daoPubkey, _bump] = await PublicKey.findProgramAddress([
       anchor.utils.bytes.utf8.encode('dao'),
       Buffer.from(daoSlug.slice(0, 32)),
