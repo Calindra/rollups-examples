@@ -1,5 +1,6 @@
 use ctsi_sol::anchor_lang::prelude::Pubkey;
 use ctsi_sol::owner_manager::AccountManager;
+use ctsi_sol::voucher;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -137,9 +138,13 @@ pub async fn handle_advance(
     match contract_response {
         Ok(_) => {
             println!("Sending voucher");
+            let smart_contract_address = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
+            let to_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+            let token_uri = "http://mydomain.com/nft";
+            let nft_mint_payload = voucher::create_mint_nft_payload(to_address, token_uri);
             let voucher = object! {
-                address: "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E",
-                payload: "0xeacabe14000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000013687474703a2f2f6d79646f6d61696e2e636f6d00000000000000000000000000",
+                address: smart_contract_address,
+                payload: nft_mint_payload,
             };
             let req = hyper::Request::builder()
                 .method(hyper::Method::POST)
