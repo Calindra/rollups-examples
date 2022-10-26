@@ -1,5 +1,4 @@
-use ctsi_sol::anchor_lang::solana_program::system_program;
-use ctsi_sol::anchor_lang::{self, prelude::*};
+use ctsi_sol::anchor_lang::{self, prelude::*, solana_program::system_program};
 use ctsi_sol::anchor_spl::{
     self,
     token::{self, Mint, TokenAccount, Transfer},

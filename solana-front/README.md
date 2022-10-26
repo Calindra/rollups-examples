@@ -7,6 +7,7 @@ The React Dapp in this repo looks like this:
 ![React Dapp](https://res.cloudinary.com/divzjiip8/image/upload/c_scale,w_1280/v1641785505/Screen_Shot_2022-01-03_at_3.52.58_PM_n7ror7.png)
 
 The Dapp uses the [@web3-react npm package's](https://www.npmjs.com/package/web3-react) injected web3 provider to connect to MetaMask and demonstrates the following functionality:
+
 * Connecting a Dapp to the blockchain
 * Reading account data from the blockchain
 * Cryptographically signing digital messages

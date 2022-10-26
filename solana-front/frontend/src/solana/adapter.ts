@@ -11,9 +11,11 @@ import { Solzen } from "./models/solzen";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
 import { cartesiRollups } from "../utils/cartesi";
 import { getReports } from "./graphql/reports";
+import { useEffect, useState } from "react";
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const DEFAULT_REPORT_URL = "http://localhost:4000/graphql";
+
+const DEFAULT_REPORT_URL = `http://${window.location.hostname}:4000/graphql`;
 export const programID = new PublicKey(idl.metadata.address);
 const encoder = new TextEncoder()
 
@@ -144,6 +146,7 @@ class AnchorProviderAdapter extends AnchorProvider {
             console.log(`transaction: ${txEth.hash}`);
             console.log("waiting for confirmation...");
             const receipt = await txEth.wait(1);
+            console.log('receipt ok');
             const inputReportResults = await pollingReportResults(receipt);
             console.log({ inputReportResults })
             if (inputReportResults?.find(report => report.json.error)) {
@@ -193,8 +196,9 @@ class ConnectionAdapter extends Connection {
         const resp = await fetch(url.toString());
         const cartesiResponse = await resp.json();
         if (!cartesiResponse.reports || !cartesiResponse.reports.length) {
-            console.log('Fallback to solana getAccountInfo')
-            return super.getAccountInfo(publicKey, commitmentOrConfig);
+            //console.log('Fallback to solana getAccountInfo')
+            //return super.getAccountInfo(publicKey, commitmentOrConfig);
+            return null;
         }
         const jsonString = ethers.utils.toUtf8String(cartesiResponse.reports[0].payload);
         const infoData = JSON.parse(jsonString);
@@ -248,4 +252,24 @@ export async function getProgram(signer?: ethers.Signer) {
         console.log('wallet publicKey changed')
     }
     return { program, provider, wallet, connection }
+}
+
+export function useCartesi(signer?: ethers.Signer) {
+    const { provider, wallet, connection } = getProvider(signer);
+    const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+    const [objects, setObjects] = useState({program, provider, wallet, connection});
+    async function changeWalletPublicKey(signer?: ethers.Signer) {
+        if (signer) {
+            const ethAddress = await signer.getAddress();
+            wallet.publicKey = convertEthAddress2Solana(ethAddress);
+            console.log(`wallet signer publicKey changed to ${wallet.publicKey.toBase58()}`);
+            const newObj = getProvider(signer);
+            const program = new anchor.Program(idl as any, programID, provider) as Program<Solzen>;
+            setObjects({ ...newObj, program, wallet } as any);
+        }
+    }
+    useEffect(() => {
+        changeWalletPublicKey(signer);
+    }, [signer])
+    return objects
 }
