@@ -12,6 +12,8 @@ import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
 import { cartesiRollups } from "../utils/cartesi";
 import { getReports } from "./graphql/reports";
 import { useEffect, useState } from "react";
+import { OutputValidityProofStruct } from "@cartesi/rollups/dist/src/types/contracts/facets/OutputFacet";
+import erc1155 from './models/MyERC1155NFT.json';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -272,4 +274,28 @@ export function useCartesi(signer?: ethers.Signer) {
         changeWalletPublicKey(signer);
     }, [signer])
     return objects
+}
+
+export async function getBalance(signer: ethers.Signer) {
+    let contract = new ethers.Contract("0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E", erc1155.abi, signer);
+    return await contract.balanceOf(await signer.getAddress(), 1);
+}
+
+export async function executeVoucher(signer: ethers.Signer) {
+    const { outputContract } = await cartesiRollups(signer);
+    const v: OutputValidityProofStruct = {
+        epochIndex: "",
+        inputIndex: "",
+        outputIndex: "",
+        outputHashesRootHash: "",
+        vouchersEpochRootHash: "",
+        noticesEpochRootHash: "",
+        machineStateHash: "",
+        keccakInHashesSiblings: [],
+        outputHashesInEpochSiblings: []
+    };
+    const contractAddress = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
+    const payload = "0xeacabe14000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000013687474703a2f2f6d79646f6d61696e2e636f6d00000000000000000000000000";
+    await outputContract.executeVoucher(contractAddress, payload, v);
+
 }

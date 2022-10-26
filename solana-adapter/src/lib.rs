@@ -136,6 +136,19 @@ pub async fn handle_advance(
     let contract_response = call_smart_contract(&payload, &msg_sender);
     match contract_response {
         Ok(_) => {
+            println!("Sending voucher");
+            let voucher = object! {
+                address: "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E",
+                payload: "0xeacabe14000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000013687474703a2f2f6d79646f6d61696e2e636f6d00000000000000000000000000",
+            };
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/voucher", server_addr))
+                .body(hyper::Body::from(voucher.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+
             println!("Sending ok report!");
             let ok_result = hex::encode("{\"ok\":1}");
             let notice = object! {"payload" => format!("0x{}", ok_result)};

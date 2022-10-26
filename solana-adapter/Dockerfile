@@ -5,6 +5,6 @@ WORKDIR /opt/cartesi/dapp
 
 COPY . .
 
-RUN cd ./stdio_call && cargo build -Z build-std=std,core,alloc,panic_abort,proc_macro --target ../riscv64ima-cartesi-linux-gnu.json --release
-RUN cp /opt/cartesi/dapp/stdio_call/target/riscv64ima-cartesi-linux-gnu/release/stdio_call /opt/cartesi/dapp/solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv
+RUN cd ./solana-smart-contract && cargo build -Z build-std=std,core,alloc,panic_abort,proc_macro --target ../riscv64ima-cartesi-linux-gnu.json --release
+RUN cp /opt/cartesi/dapp/solana-smart-contract/target/riscv64ima-cartesi-linux-gnu/release/solana_smart_contract /opt/cartesi/dapp/solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv
 RUN cargo build -Z build-std=std,core,alloc,panic_abort,proc_macro --target riscv64ima-cartesi-linux-gnu.json --release

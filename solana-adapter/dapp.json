@@ -5,6 +5,7 @@
       "solana_smart_contract_bin/7wFRuxMhXSj4AH4UGKSpaBWuYjxXkFLiakbKmE35W643",
       "target/riscv64ima-cartesi-linux-gnu/release/solana_adapter",
       "entrypoint.sh"
-    ]
+    ],
+    "size": 128000
   }
 }
