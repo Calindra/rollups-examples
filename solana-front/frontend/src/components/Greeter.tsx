@@ -9,7 +9,7 @@ import {
   useState
 } from 'react';
 import styled from 'styled-components';
-import { getProgram, useCartesi } from '../solana/adapter';
+import { getBalance, getProgram, useCartesi } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
 import { Provider } from '../utils/provider';
 import { getAccount } from '@solana/spl-token';
@@ -38,8 +38,15 @@ export function Greeter(): ReactElement {
   const [daoAccount, setDaoAccount] = useState<string>('');
   const [tokenAccount, setTokenAccount] = useState<string>('');
   const { wallet, connection, program } = useCartesi(signer);
+  const [erc1155Balance, setErc1155Balance] = useState('');
 
-  console.log({walletPubKey: wallet?.publicKey?.toBase58()});
+  async function getBalanceNFT() {
+    if (!signer) {
+      return
+    }
+    const balance = await getBalance(signer);
+    setErc1155Balance(balance.toString());
+  }
 
   async function readTokenAccount() {
     const mint = new PublicKey("4xRtyUw1QSVZSGi1BUb7nbYBk8TC9P1K1AE2xtxwaZmV");
@@ -85,13 +92,13 @@ export function Greeter(): ReactElement {
     });
     try {
       await program.methods
-      .initWallet()
-      .accounts({
-        escrowWallet,
-        mint,
-      })
-      .rpc();
-    } catch(e) {
+        .initWallet()
+        .accounts({
+          escrowWallet,
+          mint,
+        })
+        .rpc();
+    } catch (e) {
       console.error('Create TokenAccount error', e);
       alert(`Create TokenAccount error: ${(e as any).message}`);
     }
@@ -256,6 +263,13 @@ export function Greeter(): ReactElement {
             Read TokenAccount
           </StyledButton>
           <pre>{tokenAccount}</pre>
+
+          <StyledButton
+            onClick={getBalanceNFT}
+          >
+            Read NFT
+          </StyledButton>
+          <pre>{erc1155Balance}</pre>
         </div>
       </StyledGreetingDiv>
     </>

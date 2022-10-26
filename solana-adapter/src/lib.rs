@@ -1,5 +1,6 @@
 use ctsi_sol::anchor_lang::prelude::Pubkey;
 use ctsi_sol::owner_manager::AccountManager;
+use ctsi_sol::voucher;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -136,6 +137,23 @@ pub async fn handle_advance(
     let contract_response = call_smart_contract(&payload, &msg_sender);
     match contract_response {
         Ok(_) => {
+            println!("Sending voucher");
+            let smart_contract_address = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
+            let to_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+            let token_uri = "http://mydomain.com/nft";
+            let nft_mint_payload = voucher::create_mint_nft_payload(to_address, token_uri);
+            let voucher = object! {
+                address: smart_contract_address,
+                payload: nft_mint_payload,
+            };
+            let req = hyper::Request::builder()
+                .method(hyper::Method::POST)
+                .header(hyper::header::CONTENT_TYPE, "application/json")
+                .uri(format!("{}/voucher", server_addr))
+                .body(hyper::Body::from(voucher.dump()))?;
+            let response = client.request(req).await?;
+            print_response(response).await?;
+
             println!("Sending ok report!");
             let ok_result = hex::encode("{\"ok\":1}");
             let notice = object! {"payload" => format!("0x{}", ok_result)};
