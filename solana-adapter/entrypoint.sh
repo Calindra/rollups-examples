@@ -12,4 +12,5 @@
 # specific language governing permissions and limitations under the License.
 
 set -e
+export SOLANA_DATA_PATH=account_info_data
 rollup-init ./target/riscv64ima-cartesi-linux-gnu/release/solana_adapter

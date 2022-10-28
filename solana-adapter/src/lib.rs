@@ -86,6 +86,7 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), Contra
     for tx_instruction in &tx.message.instructions {
         let pidx: usize = (tx_instruction.program_id_index).into();
         let program_id = tx.message.account_keys[pidx];
+        println!("program_id = {:?}", program_id);
         let mut child = Command::new(format!("./solana_smart_contract_bin/{:?}", program_id))
             .stdin(Stdio::piped())
             .spawn()
