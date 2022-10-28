@@ -1,6 +1,8 @@
 use ctsi_sol::anchor_lang::{self, prelude::{AccountInfo, Pubkey}, solana_program::msg};
 use serde::{Serialize, Deserialize};
 
+const AIRDROP_PUBKEY: &str = "9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g";
+
 pub fn entry(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -16,7 +18,7 @@ pub fn entry(
         msg!("transfer lamports {} from {:?} to {:?}", transfer.lamports, accounts[0].key, accounts[1].key);
         let from = &accounts[0];
         let to = &accounts[1];
-        if !from.is_signer {
+        if !from.is_signer && from.key.to_string() != AIRDROP_PUBKEY {
             panic!("Not signed transfer");
         }
         **from.try_borrow_mut_lamports()? -= transfer.lamports;

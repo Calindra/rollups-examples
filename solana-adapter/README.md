@@ -77,3 +77,6 @@ docker buildx bake --load
 docker compose -f ../docker-compose.yml -f ./docker-compose.override.yml up
 
 ```
+
+AirDrop account:
+account_info_data/9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g.json
