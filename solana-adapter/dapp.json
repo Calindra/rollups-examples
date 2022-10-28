@@ -1,8 +1,8 @@
 {
   "fs": {
     "files": [
-      "solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv",
-      "solana_smart_contract_bin/7wFRuxMhXSj4AH4UGKSpaBWuYjxXkFLiakbKmE35W643",
+      "solana_smart_contract_bin",
+      "account_info_data",
       "target/riscv64ima-cartesi-linux-gnu/release/solana_adapter",
       "entrypoint.sh"
     ],

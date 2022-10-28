@@ -13,6 +13,7 @@ import { getBalance, getProgram, useCartesi } from '../solana/adapter';
 import * as anchor from "@project-serum/anchor";
 import { Provider } from '../utils/provider';
 import { getAccount } from '@solana/spl-token';
+import { ReadTokenAccount } from './ReadTokenAccount';
 
 const StyledGreetingDiv = styled.div`
   display: grid;
@@ -257,13 +258,7 @@ export function Greeter(): ReactElement {
           >
             Read Mint
           </StyledButton>
-          <StyledButton
-            onClick={readTokenAccount}
-          >
-            Read TokenAccount
-          </StyledButton>
-          <pre>{tokenAccount}</pre>
-
+          <ReadTokenAccount />
           <StyledButton
             onClick={getBalanceNFT}
           >
