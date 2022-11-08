@@ -39,11 +39,11 @@ pub mod system_program {
 
 #[cfg(not(target_arch = "bpf"))]
 pub mod solana_program {
-    pub use ::anchor_lang::solana_program::*;
+    pub use anchor_lang::solana_program::*;
 
     // anchor_lang::solana_program::program::invoke_signed
     pub mod program {
-        pub use ::anchor_lang::solana_program::program::*;
+        pub use anchor_lang::solana_program::program::*;
         use anchor_lang::{
             prelude::AccountInfo,
             solana_program::{entrypoint::ProgramResult, instruction::Instruction},
@@ -127,9 +127,11 @@ pub mod solana_program {
 
 #[cfg(not(target_arch = "bpf"))]
 pub mod prelude {
-    pub use ::anchor_lang::prelude::*;
-    use ::anchor_lang::solana_program::sysvar::SysvarId;
+    pub use anchor_lang::prelude::*;
+    use anchor_lang::solana_program::sysvar::SysvarId;
     use serde::{Deserialize, Serialize};
+    use std::str::FromStr;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     pub struct Clock {
         pub unix_timestamp: i64,
@@ -137,9 +139,12 @@ pub mod prelude {
 
     impl Clock {
         pub fn get() -> Result<Clock> {
-            Ok(Clock {
-                unix_timestamp: 123,
-            })
+            let time = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            let unix_timestamp = i64::from_str(&time.to_string()).unwrap();
+            Ok(Clock { unix_timestamp })
         }
     }
 
