@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, str::FromStr};
 use ::anchor_lang::prelude::Pubkey;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -57,6 +57,25 @@ impl AccountManager {
         })
     }
 
+    pub fn find_program_accounts(
+        &self,
+        pubkey: &Pubkey,
+    ) -> std::result::Result<Vec<(Pubkey, AccountFileData)>, Box<dyn std::error::Error>> {
+        let paths = fs::read_dir(&self.base_path).unwrap();
+        let mut result: Vec<(Pubkey, AccountFileData)> = vec![];
+        for path in paths {
+            let file_path = path.unwrap().path();
+            let account_info = self.read_account_file(file_path.to_str().unwrap().to_string())?;
+            if account_info.owner == *pubkey {                
+                let key = file_path.file_name().unwrap().to_str().unwrap();
+                let pk = Pubkey::from_str(&key[..(key.len() - 5)]).unwrap();
+                println!("program {:?} owns {:?}", &pubkey, &pk);
+                result.push((pk, account_info));
+            }
+        }
+        Ok(result)
+    }
+
     pub fn set_base_path(&mut self, base_path: String) {
         self.base_path = base_path;
     }
@@ -77,6 +96,10 @@ impl AccountManager {
         pubkey: &Pubkey,
     ) -> std::result::Result<AccountFileData, Box<dyn std::error::Error>> {
         let file_path = format!("{}/{}.json", &self.base_path, pubkey.to_string());
+        self.read_account_file(file_path)
+    }
+
+    fn read_account_file(&self, file_path: String) -> std::result::Result<AccountFileData, Box<dyn std::error::Error>> {
         let contents = fs::read_to_string(file_path)?;
         let account = serde_json::from_str::<AccountFileData>(&contents)?;
         Ok(account)

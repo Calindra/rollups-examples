@@ -50,6 +50,23 @@ pub struct AccountJson {
     lamports: String,
 }
 
+pub fn find_program_accounts(pubkey_str: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let pubkey = Pubkey::from_str(pubkey_str).unwrap();
+    let account_manager = create_account_manager();
+    let accounts = account_manager.find_program_accounts(&pubkey)?;
+    let mut res = vec![];
+    for (key, account_file_data) in accounts.iter() {
+        let account_json = AccountJson {
+            key: key.to_string(),
+            owner: Pubkey::from(account_file_data.owner).to_string(),
+            data: base64::encode(&account_file_data.data),
+            lamports: account_file_data.lamports.to_string(),
+        };
+        res.push(serde_json::to_string(&account_json).unwrap());
+    }
+    Ok(res)
+}
+
 pub fn read_account_info_as_json(pubkey_str: &str) -> Result<String, Box<dyn std::error::Error>> {
     let pubkey = Pubkey::from_str(pubkey_str).unwrap();
     let account_manager = create_account_manager();
@@ -207,21 +224,59 @@ pub async fn handle_inspect(
     // baby step: just read account info
     let hex_decoded = hex::decode(&payload[2..]).unwrap();
     let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
-    println!("read pubkey {}", pubkey_str);
-    let account_data_res = read_account_info_as_json(&pubkey_str);
-    match account_data_res {
-        Ok(account_data) => {
-            let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
+    println!("inspect decoded command {}", pubkey_str);
+    if pubkey_str.starts_with("programAccounts/") {
+        let jsons = find_program_accounts(&pubkey_str[16..]);
+        match jsons {
+            Ok(each_jsons) => {
+                for account_data in each_jsons.iter() {
+                    let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
 
-            let req = hyper::Request::builder()
-                .method(hyper::Method::POST)
-                .header(hyper::header::CONTENT_TYPE, "application/json")
-                .uri(format!("{}/report", server_addr))
-                .body(hyper::Body::from(report.dump()))?;
-            let response = client.request(req).await?;
-            print_response(response).await?;
-            Ok("accept")
+                    let req = hyper::Request::builder()
+                        .method(hyper::Method::POST)
+                        .header(hyper::header::CONTENT_TYPE, "application/json")
+                        .uri(format!("{}/report", server_addr))
+                        .body(hyper::Body::from(report.dump()))?;
+                    let response = client.request(req).await?;
+                    print_response(response).await?;
+                }
+                Ok("accept")
+            }
+            Err(_) => Ok("reject"),
         }
-        Err(_) => Ok("reject"),
+    } else if pubkey_str.starts_with("accountInfo/") {
+        let account_data_res = read_account_info_as_json(&pubkey_str[12..]);
+        match account_data_res {
+            Ok(account_data) => {
+                let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
+
+                let req = hyper::Request::builder()
+                    .method(hyper::Method::POST)
+                    .header(hyper::header::CONTENT_TYPE, "application/json")
+                    .uri(format!("{}/report", server_addr))
+                    .body(hyper::Body::from(report.dump()))?;
+                let response = client.request(req).await?;
+                print_response(response).await?;
+                Ok("accept")
+            }
+            Err(_) => Ok("reject"),
+        }
+    } else {
+        let account_data_res = read_account_info_as_json(&pubkey_str);
+        match account_data_res {
+            Ok(account_data) => {
+                let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
+
+                let req = hyper::Request::builder()
+                    .method(hyper::Method::POST)
+                    .header(hyper::header::CONTENT_TYPE, "application/json")
+                    .uri(format!("{}/report", server_addr))
+                    .body(hyper::Body::from(report.dump()))?;
+                let response = client.request(req).await?;
+                print_response(response).await?;
+                Ok("accept")
+            }
+            Err(_) => Ok("reject"),
+        }
     }
 }
