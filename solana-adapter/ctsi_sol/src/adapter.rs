@@ -1,5 +1,5 @@
-use ::anchor_lang::{prelude::AccountInfo, solana_program::entrypoint::ProgramResult};
 use anchor_lang::prelude::Pubkey;
+use anchor_lang::{prelude::AccountInfo, solana_program::entrypoint::ProgramResult};
 use std::io;
 
 use self::_private::call_smart_contract_base64;
@@ -19,6 +19,16 @@ pub fn call_solana_program(
             .trim()
             .parse()
             .expect("Input is not an integer");
+        let mut timestamp = String::new();
+        io::stdin().read_line(&mut timestamp)?;
+
+        let timestamp: i64 = timestamp
+            .trim()
+            .parse()
+            .expect("Timestamp is not an integer");
+        unsafe {
+            crate::anchor_lang::TIMESTAMP = timestamp;
+        }
 
         call_smart_contract_base64(
             &payload[..(&payload.len() - 1)],
@@ -35,7 +45,7 @@ mod _private {
         owner_manager::{self, AccountFileData, AccountManager},
         transaction::{self, Signature},
     };
-    use ::anchor_lang::prelude::{AccountInfo, Pubkey};
+    use anchor_lang::prelude::{AccountInfo, Pubkey};
     use anchor_lang::solana_program::entrypoint::ProgramResult;
     use serde::{Deserialize, Serialize};
     use std::{cell::RefCell, rc::Rc, str::FromStr};

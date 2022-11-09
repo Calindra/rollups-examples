@@ -1,5 +1,6 @@
 pub use anchor_lang::*;
 
+pub static mut TIMESTAMP: i64 = 0;
 // Replacing the
 // anchor_lang::system_program::create_account
 #[cfg(not(target_arch = "bpf"))]
@@ -130,8 +131,8 @@ pub mod prelude {
     pub use anchor_lang::prelude::*;
     use anchor_lang::solana_program::sysvar::SysvarId;
     use serde::{Deserialize, Serialize};
-    use std::str::FromStr;
-    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::TIMESTAMP;
 
     pub struct Clock {
         pub unix_timestamp: i64,
@@ -139,12 +140,10 @@ pub mod prelude {
 
     impl Clock {
         pub fn get() -> Result<Clock> {
-            let time = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-            let unix_timestamp = i64::from_str(&time.to_string()).unwrap();
-            Ok(Clock { unix_timestamp })
+            unsafe {
+                let unix_timestamp = TIMESTAMP;
+                Ok(Clock { unix_timestamp })
+            }
         }
     }
 
