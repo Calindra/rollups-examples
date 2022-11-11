@@ -95,7 +95,11 @@ impl fmt::Display for ContractError {
     }
 }
 
-pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), ContractError> {
+pub fn call_smart_contract(
+    payload: &str,
+    msg_sender: &str,
+    timestamp: &str,
+) -> Result<(), ContractError> {
     let encoded64 = hex::decode(&payload[2..]).unwrap();
     let decoded = base64::decode(&encoded64).unwrap();
     let tx: transaction::Transaction = bincode::deserialize(&decoded).unwrap();
@@ -116,6 +120,8 @@ pub fn call_smart_contract(payload: &str, msg_sender: &str) -> Result<(), Contra
         child_stdin
             .write_all(&instruction_index.to_string().as_bytes())
             .unwrap();
+        child_stdin.write_all(b"\n").unwrap();
+        child_stdin.write_all(timestamp.as_bytes()).unwrap();
         child_stdin.write_all(b"\n").unwrap();
 
         drop(child_stdin);
@@ -152,7 +158,10 @@ pub async fn handle_advance(
     let msg_sender = request["data"]["metadata"]["msg_sender"]
         .as_str()
         .ok_or("Missing msg_sender")?;
-    let contract_response = call_smart_contract(&payload, &msg_sender);
+    let timestamp = request["data"]["metadata"]["timestamp"]
+        .as_i64()
+        .ok_or("Missing timestamp")?;
+    let contract_response = call_smart_contract(&payload, &msg_sender, &timestamp.to_string());
     match contract_response {
         Ok(_) => {
             println!("Sending voucher");
