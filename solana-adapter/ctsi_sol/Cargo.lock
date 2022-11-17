@@ -517,7 +517,6 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "spl-associated-token-account",
 ]
 
 [[package]]
