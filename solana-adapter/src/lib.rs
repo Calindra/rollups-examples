@@ -1,12 +1,13 @@
 use ctsi_sol::anchor_lang::prelude::Pubkey;
 use ctsi_sol::owner_manager::AccountManager;
-use ctsi_sol::voucher;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
+
+pub mod voucher;
 
 pub mod transaction;
 

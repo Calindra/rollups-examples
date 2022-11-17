@@ -515,7 +515,6 @@ dependencies = [
  "generic-array",
  "hex",
  "once_cell",
- "regex",
  "serde",
  "serde_json",
  "spl-associated-token-account",
