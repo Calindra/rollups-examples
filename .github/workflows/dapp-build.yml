@@ -21,6 +21,7 @@ on:
 
 jobs:
     build_package:
+        if: github.repository == 'cartesi/rollups-examples'
         runs-on: ubuntu-20.04
         outputs:
             dapp-image: ${{ steps.set-dapp-image.outputs.dapp-image }}
