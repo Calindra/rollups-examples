@@ -1,9 +1,11 @@
-use std::{fs, str::FromStr};
-use ::anchor_lang::prelude::Pubkey;
+use anchor_lang::prelude::AccountInfo;
+use anchor_lang::prelude::Pubkey;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::io::ErrorKind::NotFound;
+use std::{fs, str::FromStr};
 pub static mut OWNERS: Lazy<Vec<Pubkey>> = Lazy::new(|| vec![]);
+pub static mut ACCOUNT_INFO_DATA: Lazy<Vec<Vec<u8>>> = Lazy::new(|| vec![]);
 
 /*
 #0 170.8 error[E0015]: cannot call non-const fn `Mutex::<Vec<(*mut &Pubkey, Pubkey)>>::new` in statics
@@ -19,6 +21,15 @@ pub static mut POINTERS: Lazy<Vec<(*mut &Pubkey, Pubkey)>> = Lazy::new(|| vec![]
 pub fn add_ptr(p: *mut Pubkey, key: Pubkey) {
     unsafe {
         POINTERS.push((p as *mut &Pubkey, key));
+    }
+}
+
+pub fn set_data_size(account_info: &AccountInfo, size: usize) {
+    unsafe {
+        let tot = ACCOUNT_INFO_DATA.len();
+        let data = vec![0; size];
+        ACCOUNT_INFO_DATA.push(data);
+        account_info.data.replace(&mut ACCOUNT_INFO_DATA[tot]);
     }
 }
 
@@ -45,7 +56,6 @@ pub fn change_owner<'a>(key: Pubkey, new_owner: Pubkey) {
     }
 }
 
-
 pub struct AccountManager {
     base_path: String,
 }
@@ -66,7 +76,7 @@ impl AccountManager {
         for path in paths {
             let file_path = path.unwrap().path();
             let account_info = self.read_account_file(file_path.to_str().unwrap().to_string())?;
-            if account_info.owner == *pubkey {                
+            if account_info.owner == *pubkey {
                 let key = file_path.file_name().unwrap().to_str().unwrap();
                 let pk = Pubkey::from_str(&key[..(key.len() - 5)]).unwrap();
                 println!("program {:?} owns {:?}", &pubkey, &pk);
@@ -99,7 +109,10 @@ impl AccountManager {
         self.read_account_file(file_path)
     }
 
-    fn read_account_file(&self, file_path: String) -> std::result::Result<AccountFileData, Box<dyn std::error::Error>> {
+    fn read_account_file(
+        &self,
+        file_path: String,
+    ) -> std::result::Result<AccountFileData, Box<dyn std::error::Error>> {
         let contents = fs::read_to_string(file_path)?;
         let account = serde_json::from_str::<AccountFileData>(&contents)?;
         Ok(account)
@@ -114,14 +127,14 @@ impl AccountManager {
         match delete_result {
             Ok(_) => {
                 return Ok(());
-            },
+            }
             Err(error) => {
                 if error.kind() == NotFound {
-                    return Ok(())
+                    return Ok(());
                 } else {
-                    return Err(Box::new(error))
+                    return Err(Box::new(error));
                 }
-            },
+            }
         }
     }
 }
