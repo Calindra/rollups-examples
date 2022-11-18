@@ -1,4 +1,5 @@
 use ctsi_sol::{anchor_lang::prelude::Pubkey, owner_manager};
+use json::object;
 use solana_adapter::{self, call_smart_contract, read_account_info_as_json};
 use std::fs;
 use std::str::FromStr;
@@ -142,4 +143,12 @@ fn it_should_decode() {
     let hex_decoded = hex::decode(&payload[2..]).unwrap();
     let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
     println!("read pubkey {}", pubkey_str);
+}
+
+#[tokio::test]
+async fn it_should_create_a_token_account() {
+    let rollup_server_addr = "";
+    let client = hyper::Client::new();
+    let request = object!{"request_type":"advance_state","data":{"metadata":{"msg_sender":"0xf8c694fd58360de278d5ff2276b7130bfdc0192a","epoch_index":0,"input_index":1,"block_number":43,"timestamp":1668721036},"payload":"0x59da2a984e165ae4487c99e5d1dca7e04c8a99301be6bc092932cb5d7f034378000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000067d269191c92caf3cd7723f116c85e6e9bf5593300000000000000000000000000000000000000000000000000000000000004d200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000"}};
+    solana_adapter::handle_advance(&client, rollup_server_addr, request).await;
 }

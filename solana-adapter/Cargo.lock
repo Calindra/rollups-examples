@@ -536,14 +536,11 @@ dependencies = [
  "anchor-spl",
  "base64 0.13.0",
  "bincode",
- "ethabi",
  "generic-array",
  "hex",
  "once_cell",
- "regex",
  "serde",
  "serde_json",
- "spl-associated-token-account",
 ]
 
 [[package]]
@@ -1637,10 +1634,12 @@ dependencies = [
  "base64 0.13.0",
  "bincode",
  "ctsi_sol",
+ "ethabi",
  "generic-array",
  "hex",
  "hyper",
  "json",
+ "regex",
  "serde",
  "serde_json",
  "sha2 0.10.6",

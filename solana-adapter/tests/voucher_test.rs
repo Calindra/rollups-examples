@@ -1,4 +1,4 @@
-use ctsi_sol::voucher;
+use solana_adapter::voucher;
 
 #[test]
 fn it_should_run_ethabi_encode() {
