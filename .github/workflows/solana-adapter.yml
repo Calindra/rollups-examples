@@ -35,3 +35,5 @@ jobs:
                 cp ./target/release/solana_smart_contract ../solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv && \
                 cd ../ && \
                 cargo test -- --nocapture --test-threads 1
+                cd ctsi_sol
+                cargo test -- --nocapture --test-threads 1

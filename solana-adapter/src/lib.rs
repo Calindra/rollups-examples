@@ -1,13 +1,14 @@
+use ctsi_sol::account_manager::create_account_manager;
 use ctsi_sol::anchor_lang::prelude::Pubkey;
-use ctsi_sol::owner_manager::AccountManager;
-use ethabi::ethereum_types::U256;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use std::error::Error;
 use std::fmt;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::str::FromStr;
 
+pub mod deposit;
 pub mod voucher;
 
 pub mod transaction;
@@ -30,21 +31,6 @@ where
         std::str::from_utf8(&response_body)?
     );
     Ok(())
-}
-
-fn create_account_manager() -> AccountManager {
-    let mut account_manager = AccountManager::new().unwrap();
-    let result = std::env::var("SOLANA_DATA_PATH");
-    match result {
-        Ok(path) => {
-            account_manager.set_base_path(path);
-            return account_manager;
-        }
-        Err(_) => {
-            account_manager.set_base_path("./".to_owned());
-            return account_manager;
-        }
-    };
 }
 
 #[derive(Serialize, Deserialize)]
@@ -151,18 +137,6 @@ pub fn call_smart_contract(
     Ok(())
 }
 
-pub fn create_token_account(payload: &str, msg_sender: &str, timestamp: &str) {
-    let bytes = hex::decode(&payload[2..]).unwrap();
-    let header = &bytes[0..32];
-    let depositor = &bytes[(32 + 12)..(32 + 12 + 20)];
-    let erc20 = &bytes[(32 + 32 + 12)..(32 + 32 + 32)];
-    println!("header = {}", hex::encode(header));
-    println!("depositor = {}", hex::encode(depositor));
-    println!("erc20 = {}", hex::encode(erc20));
-    let amount: U256 = (&bytes[(32 + 32 + 32)..(32 + 32 + 32 + 32)]).into();
-    println!("amount = {}", amount);
-}
-
 pub async fn handle_advance(
     client: &hyper::Client<hyper::client::HttpConnector>,
     server_addr: &str,
@@ -179,7 +153,8 @@ pub async fn handle_advance(
         .as_i64()
         .ok_or("Missing timestamp")?;
     if &payload[2..66] == ERC20_TRANSFER_HEADER {
-        create_token_account(&payload, &msg_sender, &timestamp.to_string());
+        deposit::create_token_account(&payload, &msg_sender, &timestamp.to_string());
+        send_report_ok(server_addr, client).await?;
         return Ok("accept");
     }
     let contract_response = call_smart_contract(&payload, &msg_sender, &timestamp.to_string());
@@ -202,16 +177,7 @@ pub async fn handle_advance(
             let response = client.request(req).await?;
             print_response(response).await?;
 
-            println!("Sending ok report!");
-            let ok_result = hex::encode("{\"ok\":1}");
-            let notice = object! {"payload" => format!("0x{}", ok_result)};
-            let req = hyper::Request::builder()
-                .method(hyper::Method::POST)
-                .header(hyper::header::CONTENT_TYPE, "application/json")
-                .uri(format!("{}/report", server_addr))
-                .body(hyper::Body::from(notice.dump()))?;
-            let response = client.request(req).await?;
-            print_response(response).await?;
+            send_report_ok(server_addr, client).await?;
             println!("Adding notice");
             let notice = object! {"payload" => format!("{}", payload)};
             let req = hyper::Request::builder()
@@ -238,6 +204,24 @@ pub async fn handle_advance(
             Ok("reject")
         }
     }
+}
+
+async fn send_report_ok(server_addr: &str, client: &hyper::Client<hyper::client::HttpConnector>) -> Result<(), Box<dyn Error>> {
+    if server_addr == "" {
+        // just ignore if there is no rollup server
+        return Ok(())
+    }
+    println!("Sending ok report!");
+    let ok_result = hex::encode("{\"ok\":1}");
+    let notice = object! {"payload" => format!("0x{}", ok_result)};
+    let req = hyper::Request::builder()
+        .method(hyper::Method::POST)
+        .header(hyper::header::CONTENT_TYPE, "application/json")
+        .uri(format!("{}/report", server_addr))
+        .body(hyper::Body::from(notice.dump()))?;
+    let response = client.request(req).await?;
+    print_response(response).await?;
+    Ok(())
 }
 
 pub async fn handle_inspect(
