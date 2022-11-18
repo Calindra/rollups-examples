@@ -12,14 +12,14 @@ pub mod system_program {
 
     pub fn create_account<'a, 'b, 'c, 'info>(
         ctx: CpiContext<'a, 'b, 'c, 'info, CreateAccount<'info>>,
-        _lamports: u64,
-        _space: u64,
+        lamports: u64,
+        space: u64,
         owner: &Pubkey,
     ) -> Result<()> {
-        anchor_lang::prelude::msg!("Inside lang system_program create_account...");
+        anchor_lang::prelude::msg!("Inside lang system_program create_account... {}", lamports);
         owner_manager::change_owner(ctx.accounts.to.key.clone(), owner.clone());
-        // TODO: check the correct amount
-        **ctx.accounts.to.try_borrow_mut_lamports()? += 100000;
+        **ctx.accounts.to.try_borrow_mut_lamports()? += lamports;
+        owner_manager::set_data_size(&ctx.accounts.to, space.try_into().unwrap());
 
         // let ix = solana_program::system_instruction::create_account(
         //     ctx.accounts.from.key,
@@ -36,6 +36,27 @@ pub mod system_program {
         // .map_err(Into::into)
         Ok(())
     }
+
+    pub fn transfer<'a, 'b, 'c, 'info>(
+        ctx: CpiContext<'a, 'b, 'c, 'info, Transfer<'info>>,
+        lamports: u64,
+    ) -> Result<()> {
+        **ctx.accounts.from.try_borrow_mut_lamports()? -= lamports;
+        **ctx.accounts.to.try_borrow_mut_lamports()? += lamports;
+        // let ix = crate::solana_program::system_instruction::transfer(
+        //     ctx.accounts.from.key,
+        //     ctx.accounts.to.key,
+        //     lamports,
+        // );
+        // crate::solana_program::program::invoke_signed(
+        //     &ix,
+        //     &[ctx.accounts.from, ctx.accounts.to],
+        //     ctx.signer_seeds,
+        // )
+        // .map_err(Into::into)
+        Ok(())
+    }
+    
 }
 
 #[cfg(not(target_arch = "bpf"))]
@@ -151,11 +172,7 @@ pub mod prelude {
     pub struct Rent {}
     impl Rent {
         pub fn get() -> core::result::Result<anchor_lang::prelude::Rent, ProgramError> {
-            Ok(anchor_lang::prelude::Rent {
-                lamports_per_byte_year: 1,
-                exemption_threshold: 0.1,
-                burn_percent: 1,
-            })
+            Ok(anchor_lang::prelude::Rent::default())
         }
     }
     impl SysvarId for Rent {
