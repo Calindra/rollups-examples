@@ -146,9 +146,11 @@ fn it_should_decode() {
 }
 
 #[tokio::test]
-async fn it_should_create_a_token_account() {
+async fn it_should_create_a_token_account_calling_handle_advance() {
+    setup();
     let rollup_server_addr = "";
     let client = hyper::Client::new();
     let request = object!{"request_type":"advance_state","data":{"metadata":{"msg_sender":"0xf8c694fd58360de278d5ff2276b7130bfdc0192a","epoch_index":0,"input_index":1,"block_number":43,"timestamp":1668721036},"payload":"0x59da2a984e165ae4487c99e5d1dca7e04c8a99301be6bc092932cb5d7f034378000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb9226600000000000000000000000067d269191c92caf3cd7723f116c85e6e9bf5593300000000000000000000000000000000000000000000000000000000000004d200000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000000"}};
-    solana_adapter::handle_advance(&client, rollup_server_addr, request).await;
+    let result = solana_adapter::handle_advance(&client, rollup_server_addr, request).await.unwrap();
+    assert_eq!(result, "accept");
 }

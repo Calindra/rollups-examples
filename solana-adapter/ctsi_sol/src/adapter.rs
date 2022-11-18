@@ -4,6 +4,15 @@ use std::io;
 
 use self::_private::call_smart_contract_base64;
 
+pub fn eth_address_to_pubkey(eth_address: &[u8]) -> Pubkey {
+    assert!(eth_address.len() == 20, "Ethereum address must have 20 bytes len");
+    let mut bytes = eth_address.to_vec();
+    let mut zeroes = vec![0; 12];
+    bytes.append(&mut zeroes);
+    bytes.reverse();
+    Pubkey::new(&bytes)
+}
+
 pub fn call_solana_program(
     entry: fn(&Pubkey, &[AccountInfo], &[u8]) -> ProgramResult,
 ) -> io::Result<()> {
@@ -42,7 +51,8 @@ pub fn call_solana_program(
 
 mod _private {
     use crate::{
-        owner_manager::{self, AccountFileData, AccountManager},
+        account_manager::{AccountFileData, AccountManager},
+        owner_manager::{self},
         transaction::{self, Signature},
     };
     use anchor_lang::prelude::{AccountInfo, Pubkey};

@@ -1646,6 +1646,7 @@ dependencies = [
  "solana-program",
  "solana_smart_contract",
  "spl-associated-token-account",
+ "spl-token",
  "tokio",
 ]
 

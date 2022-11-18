@@ -22,7 +22,7 @@ bincode = "1.3.1"
 # solana-perf = "1.10.29"
 # solana-sdk = "1.10.29"
 solana-program = "1.10.29"
-#spl-token = "3.5.0"
+spl-token = "3.3.1"
 ctsi_sol = { path = "./ctsi_sol" }
 solana_smart_contract = { path = "./solana-smart-contract" }
 hex = "0.4.3"

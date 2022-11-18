@@ -1,9 +1,9 @@
-use std::str::FromStr;
 use std::env;
+use std::str::FromStr;
 
-use anchor_lang::{prelude::Pubkey};
-use ctsi_sol::owner_manager::{AccountManager, AccountFileData};
-
+use anchor_lang::prelude::Pubkey;
+use ctsi_sol::account_manager::{AccountFileData, AccountManager};
+use ctsi_sol::adapter::eth_address_to_pubkey;
 
 fn create_account_manager(read_from_fixtures: bool) -> AccountManager {
     let dir = env::temp_dir();
@@ -36,7 +36,9 @@ fn it_should_write_an_account_by_public_key() {
         lamports: 123,
     };
     let account_manager = create_account_manager(false);
-    account_manager.write_account(&pubkey, &account_file_data).unwrap();
+    account_manager
+        .write_account(&pubkey, &account_file_data)
+        .unwrap();
     let account_data = account_manager.read_account(&pubkey).unwrap();
     assert_eq!(account_data.lamports, 123u64);
 }
@@ -53,6 +55,16 @@ fn it_should_delete_an_account_by_public_key() {
         lamports: 123,
     };
     let account_manager = create_account_manager(false);
-    account_manager.write_account(&pubkey, &account_file_data).unwrap();
+    account_manager
+        .write_account(&pubkey, &account_file_data)
+        .unwrap();
     account_manager.delete_account(&pubkey).unwrap();
+}
+
+#[test]
+fn it_should_convert_eth_address_to_public_key() {
+    // We implemented the same front behavior
+    let bytes = hex::decode("f39Fd6e51aad88F6F4ce6aB8827279cffFb92266").unwrap();
+    let pubkey = eth_address_to_pubkey(&bytes);
+    assert_eq!(pubkey.to_string(), "1111111111112RXi1yn6kTp7G8Td7o6z3Ciqw9v2");
 }
