@@ -1,6 +1,5 @@
 use ctsi_sol::anchor_lang::prelude::Pubkey;
 use ctsi_sol::owner_manager::AccountManager;
-use ethabi::ethereum_types::U256;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
 use std::fmt;
@@ -9,6 +8,7 @@ use std::process::{Command, Stdio};
 use std::str::FromStr;
 
 pub mod voucher;
+pub mod deposit;
 
 pub mod transaction;
 
@@ -151,18 +151,6 @@ pub fn call_smart_contract(
     Ok(())
 }
 
-pub fn create_token_account(payload: &str, msg_sender: &str, timestamp: &str) {
-    let bytes = hex::decode(&payload[2..]).unwrap();
-    let header = &bytes[0..32];
-    let depositor = &bytes[(32 + 12)..(32 + 12 + 20)];
-    let erc20 = &bytes[(32 + 32 + 12)..(32 + 32 + 32)];
-    println!("header = {}", hex::encode(header));
-    println!("depositor = {}", hex::encode(depositor));
-    println!("erc20 = {}", hex::encode(erc20));
-    let amount: U256 = (&bytes[(32 + 32 + 32)..(32 + 32 + 32 + 32)]).into();
-    println!("amount = {}", amount);
-}
-
 pub async fn handle_advance(
     client: &hyper::Client<hyper::client::HttpConnector>,
     server_addr: &str,
@@ -179,7 +167,7 @@ pub async fn handle_advance(
         .as_i64()
         .ok_or("Missing timestamp")?;
     if &payload[2..66] == ERC20_TRANSFER_HEADER {
-        create_token_account(&payload, &msg_sender, &timestamp.to_string());
+        deposit::create_token_account(&payload, &msg_sender, &timestamp.to_string());
         return Ok("accept");
     }
     let contract_response = call_smart_contract(&payload, &msg_sender, &timestamp.to_string());
