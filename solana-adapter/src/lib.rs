@@ -153,7 +153,7 @@ pub async fn handle_advance(
         .as_i64()
         .ok_or("Missing timestamp")?;
     if &payload[2..66] == ERC20_TRANSFER_HEADER {
-        deposit::create_token_account(&payload, &msg_sender, &timestamp.to_string());
+        deposit::process(&payload, &msg_sender, &timestamp.to_string());
         send_report_ok(server_addr, client).await?;
         return Ok("accept");
     }
