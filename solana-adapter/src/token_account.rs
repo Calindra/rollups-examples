@@ -37,7 +37,7 @@ pub fn subtract(token_account_address: &Pubkey, amount: &u64, check_owner: &Pubk
     }
     let token_account_data = TokenAccountBasicData {
         mint: token_acc.mint,
-        amount: token_acc.amount.checked_sub(*amount).unwrap(),
+        amount: token_acc.amount.checked_sub(*amount).expect("Insufficient funds"),
         owner: token_acc.owner,
     };
     save_token_account(token_account_data, &token_account_address);

@@ -32,8 +32,17 @@ pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
         Ok(account_file_data) => {
             add(&key, account_file_data, deposit);
         }
-        Err(error) => {
-            create_token_account(payload, msg_sender, timestamp);
+        Err(e) => {
+            if let Some(error) = e.downcast_ref::<std::io::Error>() {
+                match error.kind() {
+                    std::io::ErrorKind::NotFound => {
+                        create_token_account(payload, msg_sender, timestamp);
+                    },
+                    _ => {
+                        panic!("Unexpected account error: {:?}", key)
+                    },
+                }
+            }
         }
     }
     key
@@ -56,7 +65,7 @@ pub fn add(key: &Pubkey, account_info_data: AccountFileData, deposit: Deposit) {
         anchor_lang::accounts::account::Account::try_from_unchecked(&account_info).unwrap();
     let token_account_data = TokenAccountBasicData {
         mint: deposit.mint,
-        amount: token_acc.amount + deposit.amount,
+        amount: token_acc.amount.checked_add(deposit.amount).expect("Token amount overflow u64"),
         owner: deposit.owner,
     };
     token_account::save_token_account(token_account_data, &key);

@@ -37,12 +37,6 @@ fn it_should_run_ethabi_encode() {
 }
 
 #[test]
-fn it_should_emit_a_voucher() {
-    let payload = "0xa7741b455a9070b02e0d47705b0fe6d1757f00b25a7d3fe4938a26e17c1e610900000000000004d267d269191c92caf3cd7723f116c85e6e9bf55933";
-
-}
-
-#[test]
 fn it_should_decode_amount_from_erc20_voucher_payload() {
     let payload = "0x0778480ca791e9ab4463d1a02daf76e8a8466940b36135d791d9a92a70e3dc620000000000bc614e67d269191c92caf3cd7723f116c85e6e9bf55933";
     let amount = voucher::decode_erc20_amount(payload);
