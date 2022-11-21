@@ -10,11 +10,14 @@ use std::str::FromStr;
 
 pub mod deposit;
 pub mod voucher;
-
+pub mod token_account;
 pub mod transaction;
 
 static ERC20_TRANSFER_HEADER: &str =
     "59da2a984e165ae4487c99e5d1dca7e04c8a99301be6bc092932cb5d7f034378";
+
+static ERC20_VOUCHER_HEADER: &str =
+    "0778480ca791e9ab4463d1a02daf76e8a8466940b36135d791d9a92a70e3dc62";
 
 async fn print_response<T: hyper::body::HttpBody>(
     response: hyper::Response<T>,
@@ -157,9 +160,23 @@ pub async fn handle_advance(
         send_report_ok(server_addr, client).await?;
         return Ok("accept");
     }
+    if &payload[2..66] == ERC20_VOUCHER_HEADER {
+        println!("Sending erc-20 voucher");
+        let voucher = voucher::process_erc20(&payload, &msg_sender);
+        let req = hyper::Request::builder()
+            .method(hyper::Method::POST)
+            .header(hyper::header::CONTENT_TYPE, "application/json")
+            .uri(format!("{}/voucher", server_addr))
+            .body(hyper::Body::from(voucher.dump()))?;
+        let response = client.request(req).await?;
+        print_response(response).await?;
+        send_report_ok(server_addr, client).await?;
+        return Ok("accept");
+    }
     let contract_response = call_smart_contract(&payload, &msg_sender, &timestamp.to_string());
     match contract_response {
         Ok(_) => {
+            /*
             println!("Sending voucher");
             let smart_contract_address = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
             let to_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
@@ -176,6 +193,7 @@ pub async fn handle_advance(
                 .body(hyper::Body::from(voucher.dump()))?;
             let response = client.request(req).await?;
             print_response(response).await?;
+            */
 
             send_report_ok(server_addr, client).await?;
             println!("Adding notice");
@@ -206,10 +224,13 @@ pub async fn handle_advance(
     }
 }
 
-async fn send_report_ok(server_addr: &str, client: &hyper::Client<hyper::client::HttpConnector>) -> Result<(), Box<dyn Error>> {
+async fn send_report_ok(
+    server_addr: &str,
+    client: &hyper::Client<hyper::client::HttpConnector>,
+) -> Result<(), Box<dyn Error>> {
     if server_addr == "" {
         // just ignore if there is no rollup server
-        return Ok(())
+        return Ok(());
     }
     println!("Sending ok report!");
     let ok_result = hex::encode("{\"ok\":1}");
