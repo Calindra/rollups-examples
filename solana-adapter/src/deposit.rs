@@ -6,6 +6,7 @@ use ethabi::ethereum_types::U256;
 use solana_program::account_info::AccountInfo;
 use solana_program::pubkey::Pubkey;
 use std::cell::RefCell;
+use std::env;
 use std::rc::Rc;
 
 use crate::token_account::{self, TokenAccountBasicData};
@@ -17,6 +18,9 @@ pub struct Deposit {
 }
 
 pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
+    if msg_sender != env::var("PORTAL_ADDRESS").expect("Missing env PORTAL_ADDRESS") {
+        panic!("Wrong Portal Address");
+    }
     let bytes = hex::decode(&payload[2..]).unwrap();
 
     let deposit = decode_deposit(&bytes);

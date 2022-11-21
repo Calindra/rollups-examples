@@ -13,4 +13,5 @@
 
 set -e
 export SOLANA_DATA_PATH=account_info_data
+export PORTAL_ADDRESS=0xf8c694fd58360de278d5ff2276b7130bfdc0192a
 rollup-init ./target/riscv64ima-cartesi-linux-gnu/release/solana_adapter

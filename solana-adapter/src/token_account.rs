@@ -14,13 +14,13 @@ pub struct TokenAccountBasicData {
     pub owner: Pubkey,
 }
 
-pub fn subtract(key: &Pubkey, amount: &u64) -> Result<(), Box<dyn Error>> {
+pub fn subtract(token_account_address: &Pubkey, amount: &u64, check_owner: &Pubkey) -> Result<(), Box<dyn Error>> {
     let account_manager = account_manager::create_account_manager();
-    let account_info_data = account_manager.read_account(key).unwrap();
+    let account_info_data = account_manager.read_account(token_account_address).unwrap();
     let mut lamports = account_info_data.lamports;
     let mut data = account_info_data.data;
     let account_info = AccountInfo {
-        key,
+        key: token_account_address,
         is_signer: false,
         is_writable: false,
         lamports: Rc::new(RefCell::new(&mut lamports)),
@@ -31,12 +31,16 @@ pub fn subtract(key: &Pubkey, amount: &u64) -> Result<(), Box<dyn Error>> {
     };
     let token_acc: anchor_lang::accounts::account::Account<TokenAccount> =
         anchor_lang::accounts::account::Account::try_from_unchecked(&account_info).unwrap();
+    
+    if token_acc.owner != *check_owner {
+        panic!("Wrong token account owner");
+    }
     let token_account_data = TokenAccountBasicData {
         mint: token_acc.mint,
         amount: token_acc.amount.checked_sub(*amount).unwrap(),
         owner: token_acc.owner,
     };
-    save_token_account(token_account_data, &key);
+    save_token_account(token_account_data, &token_account_address);
     Ok(())
 }
 

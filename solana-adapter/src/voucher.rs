@@ -49,11 +49,11 @@ pub fn process_erc20(payload: &str, msg_sender: &str) -> JsonValue {
     let erc20_transfer_payload = create_erc20_voucher(&msg_sender, &amount);
     let mint = eth_address_to_pubkey(&hex::decode(&smart_contract_address).unwrap());
     let owner = eth_address_to_pubkey(&hex::decode(&msg_sender[2..]).unwrap());
-    let key = spl_associated_token_account::get_associated_token_address(&owner, &mint);
-    println!("token account key = {}", &key);
+    let token_account_address = spl_associated_token_account::get_associated_token_address(&owner, &mint);
+    println!("token account key = {}", &token_account_address);
     println!("msg_sender = {}", &msg_sender);
 
-    token_account::subtract(&key, &amount);
+    token_account::subtract(&token_account_address, &amount, &owner).unwrap();
     //erc20_transfer_payload
     object! {
         address: format!("0x{}", smart_contract_address),
