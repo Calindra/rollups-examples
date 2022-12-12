@@ -1,46 +1,87 @@
 use ctsi_sol::account_manager::{self, AccountFileData};
 use ctsi_sol::adapter::eth_address_to_pubkey;
-use ctsi_sol::anchor_lang::prelude::Rent;
-use ctsi_sol::anchor_spl::token::{self};
-use ctsi_sol::anchor_spl::NativeAccountData;
+use ctsi_sol::anchor_lang;
+use ctsi_sol::anchor_spl::token::TokenAccount;
 use ethabi::ethereum_types::U256;
-use solana_program::program_pack::Pack;
+use solana_program::account_info::AccountInfo;
 use solana_program::pubkey::Pubkey;
-use spl_token::state::{Account as InnerTokenAccount, AccountState as TokenAccountState};
+use std::cell::RefCell;
+use std::env;
+use std::rc::Rc;
 
-struct Deposit {
+use crate::token_account::{self, TokenAccountBasicData};
+
+pub struct Deposit {
     mint: Pubkey,
     amount: u64,
     owner: Pubkey,
 }
 
-pub fn create_token_account(payload: &str, _msg_sender: &str, _timestamp: &str) -> Pubkey {
+pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
+    if msg_sender != env::var("PORTAL_ADDRESS").expect("Missing env PORTAL_ADDRESS") {
+        panic!("Wrong Portal Address");
+    }
     let bytes = hex::decode(&payload[2..]).unwrap();
 
     let deposit = decode_deposit(&bytes);
-    let key = spl_associated_token_account::get_associated_token_address(&deposit.owner, &deposit.mint);
-    let token_account = InnerTokenAccount {
-        mint: deposit.mint,
-        owner: deposit.owner,
-        amount: deposit.amount,
-        state: TokenAccountState::Initialized,
-        ..Default::default()
-    };
-    let mut account_data = NativeAccountData::new(InnerTokenAccount::LEN, spl_token::id());
-
-    InnerTokenAccount::pack(token_account, &mut account_data.data).unwrap();
-
-    let lamports = Rent::get().unwrap().minimum_balance(InnerTokenAccount::LEN);
-    let account_file_data = AccountFileData {
-        owner: token::ID,
-        data: account_data.data.to_vec(),
-        lamports,
-    };
-
+    let key =
+        spl_associated_token_account::get_associated_token_address(&deposit.owner, &deposit.mint);
     let account_manager = account_manager::create_account_manager();
-    account_manager
-        .write_account(&key, &account_file_data)
-        .unwrap();
+    let read = account_manager.read_account(&key);
+    match read {
+        Ok(account_file_data) => {
+            add(&key, account_file_data, deposit);
+        }
+        Err(e) => {
+            if let Some(error) = e.downcast_ref::<std::io::Error>() {
+                match error.kind() {
+                    std::io::ErrorKind::NotFound => {
+                        create_token_account(payload, msg_sender, timestamp);
+                    },
+                    _ => {
+                        panic!("Unexpected account error: {:?}", key)
+                    },
+                }
+            }
+        }
+    }
+    key
+}
+
+pub fn add(key: &Pubkey, account_info_data: AccountFileData, deposit: Deposit) {
+    let mut lamports = account_info_data.lamports;
+    let mut data = account_info_data.data;
+    let account_info = AccountInfo {
+        key,
+        is_signer: false,
+        is_writable: false,
+        lamports: Rc::new(RefCell::new(&mut lamports)),
+        data: Rc::new(RefCell::new(&mut data)),
+        owner: &account_info_data.owner,
+        executable: false,
+        rent_epoch: 0,
+    };
+    let token_acc: anchor_lang::accounts::account::Account<TokenAccount> =
+        anchor_lang::accounts::account::Account::try_from_unchecked(&account_info).unwrap();
+    let token_account_data = TokenAccountBasicData {
+        mint: deposit.mint,
+        amount: token_acc.amount.checked_add(deposit.amount).expect("Token amount overflow u64"),
+        owner: deposit.owner,
+    };
+    token_account::save_token_account(token_account_data, &key);
+}
+
+pub fn create_token_account(payload: &str, _msg_sender: &str, _timestamp: &str) -> Pubkey {
+    let bytes = hex::decode(&payload[2..]).unwrap();
+    let deposit = decode_deposit(&bytes);
+    let key =
+        spl_associated_token_account::get_associated_token_address(&deposit.owner, &deposit.mint);
+    let token_account_data = TokenAccountBasicData {
+        mint: deposit.mint,
+        amount: deposit.amount,
+        owner: deposit.owner,
+    };
+    token_account::save_token_account(token_account_data, &key);
     key
 }
 
