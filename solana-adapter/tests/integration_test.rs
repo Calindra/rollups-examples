@@ -1,6 +1,6 @@
 use ctsi_sol::{anchor_lang::prelude::Pubkey, owner_manager};
 use json::object;
-use solana_adapter::{self, call_smart_contract, read_account_info_as_json};
+use solana_adapter::{self, call_smart_contract, read_account_info_as_json, deposit};
 use std::fs;
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -20,7 +20,7 @@ fn setup() {
     println!("{}", final_temp_dir);
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
-    std::env::set_var("PORTAL_ADDRESS", "0xf8c694fd58360de278d5ff2276b7130bfdc0192a");
+    deposit::only_accepts_deposits_from_address("0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string());
     unsafe {
         owner_manager::POINTERS.clear();
         owner_manager::OWNERS.clear();

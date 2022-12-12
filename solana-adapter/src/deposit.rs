@@ -6,10 +6,11 @@ use ethabi::ethereum_types::U256;
 use solana_program::account_info::AccountInfo;
 use solana_program::pubkey::Pubkey;
 use std::cell::RefCell;
-use std::env;
 use std::rc::Rc;
 
 use crate::token_account::{self, TokenAccountBasicData};
+
+static mut ALLOWED_ADDRESS: Option<String> = None;
 
 pub struct Deposit {
     mint: Pubkey,
@@ -17,10 +18,22 @@ pub struct Deposit {
     owner: Pubkey,
 }
 
-pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
-    if msg_sender != env::var("PORTAL_ADDRESS").expect("Missing env PORTAL_ADDRESS") {
-        panic!("Wrong Portal Address");
+fn panic_check_msg_sender(msg_sender: &str) {
+    unsafe {
+        if msg_sender != ALLOWED_ADDRESS.as_ref().unwrap() {
+            panic!("Address not allowed to make deposits");
+        }
     }
+}
+
+pub fn only_accepts_deposits_from_address(address: String) {
+    unsafe {
+        ALLOWED_ADDRESS = Some(address);
+    }
+}
+
+pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
+    panic_check_msg_sender(msg_sender);
     let bytes = hex::decode(&payload[2..]).unwrap();
 
     let deposit = decode_deposit(&bytes);
@@ -37,10 +50,10 @@ pub fn process(payload: &str, msg_sender: &str, timestamp: &str) -> Pubkey {
                 match error.kind() {
                     std::io::ErrorKind::NotFound => {
                         create_token_account(payload, msg_sender, timestamp);
-                    },
+                    }
                     _ => {
                         panic!("Unexpected account error: {:?}", key)
-                    },
+                    }
                 }
             }
         }
@@ -65,7 +78,10 @@ pub fn add(key: &Pubkey, account_info_data: AccountFileData, deposit: Deposit) {
         anchor_lang::accounts::account::Account::try_from_unchecked(&account_info).unwrap();
     let token_account_data = TokenAccountBasicData {
         mint: deposit.mint,
-        amount: token_acc.amount.checked_add(deposit.amount).expect("Token amount overflow u64"),
+        amount: token_acc
+            .amount
+            .checked_add(deposit.amount)
+            .expect("Token amount overflow u64"),
         owner: deposit.owner,
     };
     token_account::save_token_account(token_account_data, &key);

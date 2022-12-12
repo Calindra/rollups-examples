@@ -11,6 +11,7 @@
 // specific language governing permissions and limitations under the License.
 
 use json::{object, JsonValue};
+use solana_adapter::deposit::{self};
 use std::env;
 
 fn process_initial(metadata: &JsonValue) -> Option<String> {
@@ -32,7 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server_addr = env::var("ROLLUP_HTTP_SERVER_URL")?;
 
     let mut status = "accept";
-    let mut _rollup_address = String::new();
     loop {
         println!("Sending finish");
         let response = object! {"status" => status.clone()};
@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let req = json::parse(utf)?;
 
             if let Some(address) = process_initial(&req["data"]["metadata"]) {
-                _rollup_address = address;
+                deposit::only_accepts_deposits_from_address(address);
                 continue;
             }
 
@@ -60,8 +60,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .as_str()
                 .ok_or("request_type is not a string")?;
             status = match request_type {
-                "advance_state" => solana_adapter::handle_advance(&client, &server_addr[..], req).await?,
-                "inspect_state" => solana_adapter::handle_inspect(&client, &server_addr[..], req).await?,
+                "advance_state" => {
+                    solana_adapter::handle_advance(&client, &server_addr[..], req).await?
+                }
+                "inspect_state" => {
+                    solana_adapter::handle_inspect(&client, &server_addr[..], req).await?
+                }
                 &_ => {
                     eprintln!("Unknown request type");
                     "reject"

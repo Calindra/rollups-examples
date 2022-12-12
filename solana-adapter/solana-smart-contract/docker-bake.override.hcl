@@ -11,13 +11,13 @@ variable "DOCKER_ORGANIZATION" {
 }
 
 target "server" {
-  tags = ["${DOCKER_ORGANIZATION}/dapp:echo-rust-${TAG}-server"]
+  tags = ["${DOCKER_ORGANIZATION}/dapp:solana-adapter-${TAG}-server"]
 }
 
 target "console" {
-  tags = ["${DOCKER_ORGANIZATION}/dapp:echo-rust-${TAG}-console"]
+  tags = ["${DOCKER_ORGANIZATION}/dapp:solana-adapter-${TAG}-console"]
 }
 
 target "machine" {
-  tags = ["${DOCKER_ORGANIZATION}/dapp:echo-rust-${TAG}-machine"]
+  tags = ["${DOCKER_ORGANIZATION}/dapp:solana-adapter-${TAG}-machine"]
 }
