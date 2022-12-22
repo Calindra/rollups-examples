@@ -108,7 +108,7 @@ pub fn call_smart_contract(
             .unwrap();
         let child_stdin = child.stdin.as_mut().unwrap();
 
-        child_stdin.write_all(b"Header: External PI").unwrap();
+        child_stdin.write_all(b"Header: External CPI").unwrap();
         child_stdin.write_all(b"\n").unwrap();
 
         child_stdin.write_all(msg_sender.as_bytes()).unwrap();

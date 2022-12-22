@@ -1,4 +1,4 @@
-use cartesi_solana::{anchor_lang::{self, prelude::{AccountInfo, Pubkey}, solana_program::msg}, account_manager};
+use cartesi_solana::{anchor_lang::{self, prelude::{AccountInfo, Pubkey}, solana_program::msg}, account_manager,owner_manager};
 use serde::{Serialize, Deserialize};
 
 const AIRDROP_PUBKEY: &str = "9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g";
@@ -20,6 +20,8 @@ pub fn entry(
         **from.try_borrow_mut_lamports()? -= create.lamports;
         **account.try_borrow_mut_lamports()? += create.lamports;
         account_manager::set_data_size(account, create.space.try_into().unwrap());
+        println!("create account {:?} with owner {:?}", account.key, create.program_id);
+        owner_manager::change_owner(account.key.clone(), create.program_id);
     } else if instruction.code == 2 {
         let transfer: Transfer = bincode::deserialize(data).unwrap();
         msg!("transfer lamports {} from {:?} to {:?}", transfer.lamports, accounts[0].key, accounts[1].key);
@@ -31,7 +33,7 @@ pub fn entry(
         **from.try_borrow_mut_lamports()? -= transfer.lamports;
         **to.try_borrow_mut_lamports()? += transfer.lamports;
     } else {
-        msg!("Instruction code {} not implemented", instruction.code);
+        panic!("Instruction code {} not implemented", instruction.code);
     }
     Ok(())
 }
