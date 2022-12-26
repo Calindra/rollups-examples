@@ -12,7 +12,7 @@ pub fn entry(
         panic!("Wrong program id");
     }
     let instruction: Instruction = bincode::deserialize(&data[..4]).unwrap();
-    msg!("instruction = {}", instruction.code);
+    msg!("instruction.code = {}", instruction.code);
     if instruction.code == 0 {
         let create: Create = bincode::deserialize(data).unwrap();
         let from = &accounts[0];
@@ -22,6 +22,10 @@ pub fn entry(
         account_manager::set_data_size(account, create.space.try_into().unwrap());
         println!("create account {:?} with owner {:?}", account.key, create.program_id);
         owner_manager::change_owner(account.key.clone(), create.program_id);
+    } else if instruction.code == 1 {
+        let assing: Assing = bincode::deserialize(data).expect("Deserialize Assing instruction error");
+        let account = &accounts[0];
+        owner_manager::change_owner(account.key.clone(), assing.program_id);
     } else if instruction.code == 2 {
         let transfer: Transfer = bincode::deserialize(data).unwrap();
         msg!("transfer lamports {} from {:?} to {:?}", transfer.lamports, accounts[0].key, accounts[1].key);
@@ -32,6 +36,10 @@ pub fn entry(
         }
         **from.try_borrow_mut_lamports()? -= transfer.lamports;
         **to.try_borrow_mut_lamports()? += transfer.lamports;
+    } else if instruction.code == 8 {
+        let allocate: Allocate = bincode::deserialize(data).expect("Deserialize Allocate instruction error");
+        let account = &accounts[0];
+        account_manager::set_data_size(account, allocate.space.try_into().unwrap());
     } else {
         panic!("Instruction code {} not implemented", instruction.code);
     }
@@ -54,5 +62,18 @@ pub struct Create {
     instruction: u32,
     lamports: u64,
     space: u64,
+    program_id: Pubkey,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Allocate {
+    instruction: u32,
+    space: u64,
+}
+
+#[derive(Serialize, Deserialize)]
+
+pub struct Assing {
+    instruction: u32,
     program_id: Pubkey,
 }
