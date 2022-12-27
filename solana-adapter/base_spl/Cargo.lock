@@ -405,7 +405,6 @@ dependencies = [
  "bincode",
  "generic-array",
  "hex",
- "once_cell",
  "serde",
  "serde_json",
 ]
