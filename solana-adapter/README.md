@@ -81,6 +81,7 @@ AirDrop account:
 account_info_data/9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g.json
 
 How to clean the accounts
+
 ```shell
 git clean -f account_info_data/
 ```
