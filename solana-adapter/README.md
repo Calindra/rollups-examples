@@ -75,8 +75,12 @@ cargo watch -x 'test -- --nocapture --test-threads 1'
 docker-compose -f ../docker-compose.yml -f ./docker-compose.override.yml down -v
 docker buildx bake --load
 docker compose -f ../docker-compose.yml -f ./docker-compose.override.yml up
-
 ```
 
 AirDrop account:
 account_info_data/9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g.json
+
+How to clean the accounts
+```shell
+git clean -f account_info_data/
+```

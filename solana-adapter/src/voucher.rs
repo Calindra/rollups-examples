@@ -1,4 +1,4 @@
-use ctsi_sol::adapter::eth_address_to_pubkey;
+use cartesi_solana::adapter::eth_address_to_pubkey;
 use json::{object, JsonValue};
 
 use crate::token_account;

@@ -411,6 +411,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
 
 [[package]]
+name = "cartesi-solana"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9751f9690ebbfd5413ce6e71b5d569b5d5b88350003b37ec249c8304d8a8f570"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "base64 0.13.0",
+ "bincode",
+ "generic-array",
+ "hex",
+ "once_cell",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.73"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -526,21 +543,6 @@ checksum = "b584a330336237c1eecd3e94266efb216c56ed91225d634cb2991c5f3fd1aeab"
 dependencies = [
  "generic-array",
  "subtle",
-]
-
-[[package]]
-name = "ctsi_sol"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "base64 0.13.0",
- "bincode",
- "generic-array",
- "hex",
- "once_cell",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -1633,7 +1635,7 @@ version = "0.3.0"
 dependencies = [
  "base64 0.13.0",
  "bincode",
- "ctsi_sol",
+ "cartesi-solana",
  "ethabi",
  "generic-array",
  "hex",
@@ -1644,25 +1646,8 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "solana-program",
- "solana_smart_contract",
  "spl-associated-token-account",
  "spl-token",
- "tokio",
-]
-
-[[package]]
-name = "solana_smart_contract"
-version = "0.3.0"
-dependencies = [
- "base64 0.13.0",
- "bincode",
- "ctsi_sol",
- "hex",
- "hyper",
- "json",
- "sha2 0.10.6",
- "solana-program",
- "spl-associated-token-account",
  "tokio",
 ]
 

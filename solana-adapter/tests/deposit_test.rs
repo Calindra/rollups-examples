@@ -5,7 +5,7 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use ctsi_sol::{
+use cartesi_solana::{
     account_manager::create_account_manager, adapter::eth_address_to_pubkey, anchor_lang,
     anchor_spl::token::TokenAccount, owner_manager,
 };

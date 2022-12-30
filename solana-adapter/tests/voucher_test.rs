@@ -1,6 +1,6 @@
 use std::{time::{SystemTime, UNIX_EPOCH}, fs, cell::RefCell, rc::Rc};
 
-use ctsi_sol::{owner_manager, account_manager::create_account_manager, anchor_lang, anchor_spl::token::TokenAccount};
+use cartesi_solana::{owner_manager, account_manager::create_account_manager, anchor_lang, anchor_spl::token::TokenAccount};
 use solana_adapter::{voucher, deposit};
 use solana_program::account_info::AccountInfo;
 

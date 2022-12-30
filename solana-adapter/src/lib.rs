@@ -1,7 +1,7 @@
-use ctsi_sol::account_manager::create_account_manager;
-use ctsi_sol::anchor_lang::prelude::Pubkey;
+use cartesi_solana::account_manager::create_account_manager;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use solana_program::pubkey::Pubkey;
 use std::error::Error;
 use std::fmt;
 use std::io::Write;

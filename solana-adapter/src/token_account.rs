@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, error::Error};
 
-use ctsi_sol::{
+use cartesi_solana::{
     account_manager::{self, AccountFileData},
     anchor_lang::{prelude::Rent, self},
     anchor_spl::{token::{self, TokenAccount}, NativeAccountData},
