@@ -1,12 +1,14 @@
-use std::{str::FromStr, collections::HashMap};
+use std::{collections::HashMap, str::FromStr};
 
 use cartesi_solana::account_manager::{create_account_manager, AccountFileData};
 use json::{object, JsonValue};
-use solana_program::pubkey::{self, Pubkey};
+use solana_program::pubkey::Pubkey;
 use spl_token::state::{Account, GenericTokenAccount};
 use url::Url;
 
 use crate::{print_response, AccountJson};
+
+static TOKEN_PROGRAM_ID: &str = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";
 
 pub async fn handle(
     client: &hyper::Client<hyper::client::HttpConnector>,
@@ -102,18 +104,7 @@ pub fn find_program_accounts(pubkey_str: &str) -> Result<Vec<String>, Box<dyn st
     let pubkey = Pubkey::from_str(pubkey_str).expect(&format!("Pubkey error: {}", pubkey_str));
     let account_manager = create_account_manager();
     let accounts = account_manager.find_program_accounts(&pubkey)?;
-    let mut res = vec![];
-    for (key, account_file_data) in accounts.iter() {
-        let account_json = AccountJson {
-            key: key.to_string(),
-            owner: Pubkey::from(account_file_data.owner).to_string(),
-            data: base64::encode(&account_file_data.data),
-            lamports: account_file_data.lamports.to_string(),
-        };
-        res.push(
-            serde_json::to_string(&account_json).expect(&format!("Fail to serialize as json")),
-        );
-    }
+    let res = accounts.iter().map(stringify).collect();
     Ok(res)
 }
 
@@ -123,14 +114,7 @@ pub fn read_account_info_as_json_string(
     let pubkey = Pubkey::from_str(pubkey_str).unwrap();
     let account_manager = create_account_manager();
     let account_file_data = account_manager.read_account(&pubkey)?;
-
-    let account_json = AccountJson {
-        key: pubkey_str.to_string(),
-        owner: Pubkey::from(account_file_data.owner).to_string(),
-        data: base64::encode(account_file_data.data),
-        lamports: account_file_data.lamports.to_string(),
-    };
-    Ok(serde_json::to_string(&account_json).unwrap())
+    Ok(stringify(&(pubkey, account_file_data)))
 }
 
 pub fn handle_token_accounts_by_owner(
@@ -147,38 +131,20 @@ pub fn handle_token_accounts_by_owner(
 }
 
 pub fn get_token_accounts_by_owner_and_mint(
-    pubkey: &str, mint: &str
+    pubkey: &str,
+    mint: &str,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let token_owner = Pubkey::from_str(pubkey).unwrap();
-    let token_accounts_owner_program_id =
-        Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+    let token_accounts_owner_program_id = Pubkey::from_str(TOKEN_PROGRAM_ID).unwrap();
     let mint = Pubkey::from_str(mint).unwrap();
     let account_manager = create_account_manager();
     let all_token_accounts =
         account_manager.find_program_accounts(&token_accounts_owner_program_id)?;
     let owned: Vec<String> = all_token_accounts
         .iter()
-        .filter(|(_, account)| {
-            let owner = Account::unpack_account_owner(&account.data);
-            match owner {
-                Some(owner) => owner == &token_owner,
-                None => false,
-            }
-        })
-        .filter(|(_, account)| {
-            let data_mint = Account::unpack_account_mint(&account.data);
-            match data_mint {
-                Some(data_mint) => data_mint == &mint,
-                None => false,
-            }
-        })
-        .map(|(pubkey, account_file_data)| AccountJson {
-            key: pubkey.to_string(),
-            owner: Pubkey::from(account_file_data.owner).to_string(),
-            data: base64::encode(&account_file_data.data),
-            lamports: account_file_data.lamports.to_string(),
-        })
-        .map(|account_json| serde_json::to_string(&account_json).unwrap())
+        .filter(|(_, account)| is_owned_by(&token_owner, account))
+        .filter(|(_, account)| is_account_mint(&mint, account))
+        .map(stringify)
         .collect();
     return Ok(owned);
 }
@@ -187,27 +153,44 @@ pub fn get_token_accounts_by_owner(
     pubkey: &str,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let token_owner = Pubkey::from_str(pubkey).unwrap();
-    let token_accounts_owner_program_id =
-        Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+    let token_accounts_owner_program_id = Pubkey::from_str(TOKEN_PROGRAM_ID).unwrap();
     let account_manager = create_account_manager();
     let all_token_accounts =
         account_manager.find_program_accounts(&token_accounts_owner_program_id)?;
     let owned: Vec<String> = all_token_accounts
         .iter()
-        .filter(|(_, account)| {
-            let owner = Account::unpack_account_owner(&account.data);
-            match owner {
-                Some(owner) => owner == &token_owner,
-                None => false,
-            }
-        })
-        .map(|(pubkey, account_file_data)| AccountJson {
-            key: pubkey.to_string(),
-            owner: Pubkey::from(account_file_data.owner).to_string(),
-            data: base64::encode(&account_file_data.data),
-            lamports: account_file_data.lamports.to_string(),
-        })
-        .map(|account_json| serde_json::to_string(&account_json).unwrap())
+        .filter(|(_, account)| is_owned_by(&token_owner, account))
+        .map(stringify)
         .collect();
     return Ok(owned);
+}
+
+fn stringify(tup: &(Pubkey, AccountFileData)) -> String {
+    let account_json = to_account_json(tup);
+    serde_json::to_string(&account_json).expect("Fail to stringify the account")
+}
+
+fn to_account_json((pubkey, account_file_data): &(Pubkey, AccountFileData)) -> AccountJson {
+    AccountJson {
+        key: pubkey.to_string(),
+        owner: Pubkey::from(account_file_data.owner).to_string(),
+        data: base64::encode(&account_file_data.data),
+        lamports: account_file_data.lamports.to_string(),
+    }
+}
+
+fn is_owned_by(token_owner: &Pubkey, account: &AccountFileData) -> bool {
+    let owner = Account::unpack_account_owner(&account.data);
+    match owner {
+        Some(owner) => owner == token_owner,
+        None => false,
+    }
+}
+
+fn is_account_mint(mint: &Pubkey, account: &AccountFileData) -> bool {
+    let data_mint = Account::unpack_account_mint(&account.data);
+    match data_mint {
+        Some(data_mint) => data_mint == mint,
+        None => false,
+    }
 }
