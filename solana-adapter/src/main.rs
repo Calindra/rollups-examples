@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     solana_adapter::handle_advance(&client, &server_addr[..], req).await?
                 }
                 "inspect_state" => {
-                    solana_adapter::handle_inspect(&client, &server_addr[..], req).await?
+                    solana_adapter::inspect::handle(&client, &server_addr[..], req).await?
                 }
                 &_ => {
                     eprintln!("Unknown request type");

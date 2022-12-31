@@ -12,6 +12,7 @@ pub mod deposit;
 pub mod voucher;
 pub mod token_account;
 pub mod transaction;
+pub mod inspect;
 
 static ERC20_TRANSFER_HEADER: &str =
     "59da2a984e165ae4487c99e5d1dca7e04c8a99301be6bc092932cb5d7f034378";
@@ -42,37 +43,6 @@ pub struct AccountJson {
     owner: String,
     data: String,
     lamports: String,
-}
-
-pub fn find_program_accounts(pubkey_str: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let pubkey = Pubkey::from_str(pubkey_str).unwrap();
-    let account_manager = create_account_manager();
-    let accounts = account_manager.find_program_accounts(&pubkey)?;
-    let mut res = vec![];
-    for (key, account_file_data) in accounts.iter() {
-        let account_json = AccountJson {
-            key: key.to_string(),
-            owner: Pubkey::from(account_file_data.owner).to_string(),
-            data: base64::encode(&account_file_data.data),
-            lamports: account_file_data.lamports.to_string(),
-        };
-        res.push(serde_json::to_string(&account_json).unwrap());
-    }
-    Ok(res)
-}
-
-pub fn read_account_info_as_json(pubkey_str: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let pubkey = Pubkey::from_str(pubkey_str).unwrap();
-    let account_manager = create_account_manager();
-    let account_file_data = account_manager.read_account(&pubkey)?;
-
-    let account_json = AccountJson {
-        key: pubkey_str.to_string(),
-        owner: Pubkey::from(account_file_data.owner).to_string(),
-        data: base64::encode(account_file_data.data),
-        lamports: account_file_data.lamports.to_string(),
-    };
-    Ok(serde_json::to_string(&account_json).unwrap())
 }
 
 #[derive(Debug)]
@@ -180,25 +150,6 @@ pub async fn handle_advance(
     let contract_response = call_smart_contract(&payload, &msg_sender, &timestamp.to_string());
     match contract_response {
         Ok(_) => {
-            /*
-            println!("Sending voucher");
-            let smart_contract_address = "0xE6E340D132b5f46d1e472DebcD681B2aBc16e57E";
-            let to_address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
-            let token_uri = "http://mydomain.com/nft";
-            let nft_mint_payload = voucher::create_mint_nft_payload(to_address, token_uri);
-            let voucher = object! {
-                address: smart_contract_address,
-                payload: nft_mint_payload,
-            };
-            let req = hyper::Request::builder()
-                .method(hyper::Method::POST)
-                .header(hyper::header::CONTENT_TYPE, "application/json")
-                .uri(format!("{}/voucher", server_addr))
-                .body(hyper::Body::from(voucher.dump()))?;
-            let response = client.request(req).await?;
-            print_response(response).await?;
-            */
-
             send_report_ok(server_addr, client).await?;
             println!("Adding notice");
             let notice = object! {"payload" => format!("{}", payload)};
@@ -247,75 +198,4 @@ async fn send_report_ok(
     let response = client.request(req).await?;
     print_response(response).await?;
     Ok(())
-}
-
-pub async fn handle_inspect(
-    client: &hyper::Client<hyper::client::HttpConnector>,
-    server_addr: &str,
-    request: JsonValue,
-) -> Result<&'static str, Box<dyn std::error::Error>> {
-    println!("Received inspect request data {}", &request);
-    let payload = request["data"]["payload"]
-        .as_str()
-        .ok_or("Missing payload")?;
-    println!("Adding report");
-
-    // baby step: just read account info
-    let hex_decoded = hex::decode(&payload[2..]).unwrap();
-    let pubkey_str = std::str::from_utf8(&hex_decoded).unwrap();
-    println!("inspect decoded command {}", pubkey_str);
-    if pubkey_str.starts_with("programAccounts/") {
-        let jsons = find_program_accounts(&pubkey_str[16..]);
-        match jsons {
-            Ok(each_jsons) => {
-                for account_data in each_jsons.iter() {
-                    let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
-
-                    let req = hyper::Request::builder()
-                        .method(hyper::Method::POST)
-                        .header(hyper::header::CONTENT_TYPE, "application/json")
-                        .uri(format!("{}/report", server_addr))
-                        .body(hyper::Body::from(report.dump()))?;
-                    let response = client.request(req).await?;
-                    print_response(response).await?;
-                }
-                Ok("accept")
-            }
-            Err(_) => Ok("reject"),
-        }
-    } else if pubkey_str.starts_with("accountInfo/") {
-        let account_data_res = read_account_info_as_json(&pubkey_str[12..]);
-        match account_data_res {
-            Ok(account_data) => {
-                let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
-
-                let req = hyper::Request::builder()
-                    .method(hyper::Method::POST)
-                    .header(hyper::header::CONTENT_TYPE, "application/json")
-                    .uri(format!("{}/report", server_addr))
-                    .body(hyper::Body::from(report.dump()))?;
-                let response = client.request(req).await?;
-                print_response(response).await?;
-                Ok("accept")
-            }
-            Err(_) => Ok("reject"),
-        }
-    } else {
-        let account_data_res = read_account_info_as_json(&pubkey_str);
-        match account_data_res {
-            Ok(account_data) => {
-                let report = object! {"payload" => format!("0x{}", hex::encode(account_data))};
-
-                let req = hyper::Request::builder()
-                    .method(hyper::Method::POST)
-                    .header(hyper::header::CONTENT_TYPE, "application/json")
-                    .uri(format!("{}/report", server_addr))
-                    .body(hyper::Body::from(report.dump()))?;
-                let response = client.request(req).await?;
-                print_response(response).await?;
-                Ok("accept")
-            }
-            Err(_) => Ok("reject"),
-        }
-    }
 }
