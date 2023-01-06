@@ -17,11 +17,6 @@ on:
             - develop
             - feature/solana-adapter*
 jobs:
-    # build:
-    #     uses: ./.github/workflows/dapp-build.yml
-    #     with:
-    #         dapp-name: solana-adapter
-    #     secrets: inherit
     just-test:
         runs-on: ubuntu-latest
         steps:
@@ -30,10 +25,5 @@ jobs:
               with:
                 toolchain: nightly
             - run: |
-                cd ${{ github.workspace }} && cd ./solana-adapter && \
-                cd solana-smart-contract && cargo build --release && \
-                cp ./target/release/solana_smart_contract ../solana_smart_contract_bin/2QB8wEBJ8jjMQuZPvj3jaZP7JJb5j21u4xbxTnwsZRfv && \
-                cd ../ && \
-                cargo test -- --nocapture --test-threads 1
-                cd ctsi_sol
+                cd ${{ github.workspace }} && cd ./solana-adapter
                 cargo test -- --nocapture --test-threads 1

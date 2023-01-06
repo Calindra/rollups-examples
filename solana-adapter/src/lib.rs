@@ -1,7 +1,7 @@
-use ctsi_sol::account_manager::create_account_manager;
-use ctsi_sol::anchor_lang::prelude::Pubkey;
+use cartesi_solana::account_manager::create_account_manager;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
+use solana_program::pubkey::Pubkey;
 use std::error::Error;
 use std::fmt;
 use std::io::Write;
@@ -107,6 +107,10 @@ pub fn call_smart_contract(
             .spawn()
             .unwrap();
         let child_stdin = child.stdin.as_mut().unwrap();
+
+        child_stdin.write_all(b"Header: External CPI").unwrap();
+        child_stdin.write_all(b"\n").unwrap();
+
         child_stdin.write_all(msg_sender.as_bytes()).unwrap();
         child_stdin.write_all(b"\n").unwrap();
         child_stdin.write_all(&encoded64).unwrap();
