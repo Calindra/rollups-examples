@@ -423,6 +423,8 @@ dependencies = [
  "borsh",
  "generic-array",
  "hex",
+ "lazy_static",
+ "once_cell",
  "serde",
  "serde_json",
  "solana-sdk",
