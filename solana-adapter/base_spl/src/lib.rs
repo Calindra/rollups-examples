@@ -1,5 +1,9 @@
-use cartesi_solana::{anchor_lang::{self, prelude::{AccountInfo, Pubkey}, solana_program::msg}, account_manager,owner_manager};
-use serde::{Serialize, Deserialize};
+use anchor_lang::{prelude::{Pubkey, AccountInfo}, solana_program::msg};
+use cartesi_solana::{
+    account_manager,
+    owner_manager,
+};
+use serde::{Deserialize, Serialize};
 
 const AIRDROP_PUBKEY: &str = "9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g";
 
@@ -20,15 +24,24 @@ pub fn entry(
         **from.try_borrow_mut_lamports()? -= create.lamports;
         **account.try_borrow_mut_lamports()? += create.lamports;
         account_manager::set_data_size(account, create.space.try_into().unwrap());
-        println!("create account {:?} with owner {:?}", account.key, create.program_id);
+        println!(
+            "create account {:?} with owner {:?}",
+            account.key, create.program_id
+        );
         owner_manager::change_owner(account.key.clone(), create.program_id);
     } else if instruction.code == 1 {
-        let assing: Assing = bincode::deserialize(data).expect("Deserialize Assing instruction error");
+        let assing: Assing =
+            bincode::deserialize(data).expect("Deserialize Assing instruction error");
         let account = &accounts[0];
         owner_manager::change_owner(account.key.clone(), assing.program_id);
     } else if instruction.code == 2 {
         let transfer: Transfer = bincode::deserialize(data).unwrap();
-        msg!("transfer lamports {} from {:?} to {:?}", transfer.lamports, accounts[0].key, accounts[1].key);
+        msg!(
+            "transfer lamports {} from {:?} to {:?}",
+            transfer.lamports,
+            accounts[0].key,
+            accounts[1].key
+        );
         let from = &accounts[0];
         let to = &accounts[1];
         if !from.is_signer && from.key.to_string() != AIRDROP_PUBKEY {
@@ -37,7 +50,8 @@ pub fn entry(
         **from.try_borrow_mut_lamports()? -= transfer.lamports;
         **to.try_borrow_mut_lamports()? += transfer.lamports;
     } else if instruction.code == 8 {
-        let allocate: Allocate = bincode::deserialize(data).expect("Deserialize Allocate instruction error");
+        let allocate: Allocate =
+            bincode::deserialize(data).expect("Deserialize Allocate instruction error");
         let account = &accounts[0];
         account_manager::set_data_size(account, allocate.space.try_into().unwrap());
     } else {

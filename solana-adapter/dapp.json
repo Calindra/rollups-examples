@@ -2,6 +2,7 @@
   "fs": {
     "files": [
       "solana_smart_contract_bin",
+      "solana_programs_riscv",
       "account_info_data",
       "target/riscv64ima-cartesi-linux-gnu/release/solana_adapter",
       "entrypoint.sh"

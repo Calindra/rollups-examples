@@ -12,5 +12,5 @@ bincode = "1.3.1"
 # ctsi_sol = { path = "../ctsi_sol" }
 # cartesi-solana = "0.1.0"
 cartesi-solana = { path = "../../../cartesi-solana" }
-
+anchor-lang = "^0.25.0"
 serde = "1.0.144"
