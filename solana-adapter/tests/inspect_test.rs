@@ -25,10 +25,7 @@ fn setup() {
     deposit::only_accepts_deposits_from_address(
         "0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string(),
     );
-    unsafe {
-        owner_manager::POINTERS.clear();
-        owner_manager::OWNERS.clear();
-    }
+    owner_manager::clear();
 }
 
 fn create_token_account(depositor: &str) -> Pubkey {

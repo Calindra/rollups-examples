@@ -1,7 +1,6 @@
+use anchor_spl::token::TokenAccount;
 use cartesi_solana::account_manager::{self, AccountFileData};
 use cartesi_solana::adapter::eth_address_to_pubkey;
-use cartesi_solana::anchor_lang;
-use cartesi_solana::anchor_spl::token::TokenAccount;
 use ethabi::ethereum_types::U256;
 use solana_program::account_info::AccountInfo;
 use solana_program::pubkey::Pubkey;

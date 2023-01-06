@@ -1,7 +1,13 @@
-use std::{time::{SystemTime, UNIX_EPOCH}, fs, cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    fs,
+    rc::Rc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
-use cartesi_solana::{owner_manager, account_manager::create_account_manager, anchor_lang, anchor_spl::token::TokenAccount};
-use solana_adapter::{voucher, deposit};
+use anchor_spl::token::TokenAccount;
+use cartesi_solana::{account_manager::create_account_manager, owner_manager};
+use solana_adapter::{deposit, voucher};
 use solana_program::account_info::AccountInfo;
 
 fn setup() {
@@ -19,11 +25,10 @@ fn setup() {
     println!("{}", final_temp_dir);
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
-    deposit::only_accepts_deposits_from_address("0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string());
-    unsafe {
-        owner_manager::POINTERS.clear();
-        owner_manager::OWNERS.clear();
-    }
+    deposit::only_accepts_deposits_from_address(
+        "0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string(),
+    );
+    owner_manager::clear();
 }
 
 #[test]
@@ -47,7 +52,10 @@ fn it_should_decode_amount_from_erc20_voucher_payload() {
 fn it_should_decode_address_from_erc20_voucher_payload() {
     let payload = "0x0778480ca791e9ab4463d1a02daf76e8a8466940b36135d791d9a92a70e3dc620000000000bc614e67d269191c92caf3cd7723f116c85e6e9bf55933";
     let erc20_smart_contract_adderss = voucher::decode_erc20_address(payload);
-    assert_eq!(erc20_smart_contract_adderss.to_lowercase(), "67d269191c92Caf3cD7723F116c85e6E9bf55933".to_lowercase());
+    assert_eq!(
+        erc20_smart_contract_adderss.to_lowercase(),
+        "67d269191c92Caf3cD7723F116c85e6E9bf55933".to_lowercase()
+    );
 }
 
 #[test]
@@ -57,7 +65,6 @@ fn it_should_withdraw_the_amount() {
     let msg_sender = "0xf8c694fd58360de278d5ff2276b7130bfdc0192a";
     let timestamp = "1";
     let pubkey = deposit::process(deposit_payload, msg_sender, timestamp);
-
 
     // call voucher
     let voucher_payload = "0x0778480ca791e9ab4463d1a02daf76e8a8466940b36135d791d9a92a70e3dc6200000000000000ea67d269191c92caf3cd7723f116c85e6e9bf55933";
@@ -80,7 +87,7 @@ fn it_should_withdraw_the_amount() {
     };
     let token_account: anchor_lang::accounts::account::Account<TokenAccount> =
         anchor_lang::accounts::account::Account::try_from_unchecked(&account_info).unwrap();
-    
+
     assert_eq!(token_account.amount, 1000u64);
 }
 
@@ -92,7 +99,6 @@ fn it_should_not_withdraw_the_amount_cuz_insufficient_funds() {
     let msg_sender = "0xf8c694fd58360de278d5ff2276b7130bfdc0192a";
     let timestamp = "1";
     deposit::process(deposit_payload, msg_sender, timestamp);
-
 
     // call voucher and should panic!
     let voucher_payload = "0x0778480ca791e9ab4463d1a02daf76e8a8466940b36135d791d9a92a70e3dc62000000003b9aca0067d269191c92caf3cd7723f116c85e6e9bf55933";

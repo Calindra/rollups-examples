@@ -1,18 +1,18 @@
-use cartesi_solana::account_manager::create_account_manager;
+use anchor_lang::prelude::Pubkey;
+use cartesi_solana::adapter;
 use json::{object, JsonValue};
 use serde::{Deserialize, Serialize};
-use solana_program::pubkey::Pubkey;
 use std::error::Error;
 use std::fmt;
 use std::io::Write;
-use std::process::{Command, Stdio};
-use std::str::FromStr;
+use std::path::Path;
+use std::process::{Child, Command, Stdio};
 
 pub mod deposit;
-pub mod voucher;
+pub mod inspect;
 pub mod token_account;
 pub mod transaction;
-pub mod inspect;
+pub mod voucher;
 
 static ERC20_TRANSFER_HEADER: &str =
     "59da2a984e165ae4487c99e5d1dca7e04c8a99301be6bc092932cb5d7f034378";
@@ -59,6 +59,15 @@ impl fmt::Display for ContractError {
     }
 }
 
+fn create_child_process(program_id: &Pubkey) -> Child {
+    let path = Path::new(&adapter::get_binary_base_path()).join(program_id.to_string());
+    if !path.exists() {
+        panic!("failed to find program path [{}]", path.display());
+    }
+    let child = Command::new(&path).stdin(Stdio::piped()).spawn().unwrap();
+    child
+}
+
 pub fn call_smart_contract(
     payload: &str,
     msg_sender: &str,
@@ -72,15 +81,11 @@ pub fn call_smart_contract(
         let pidx: usize = (tx_instruction.program_id_index).into();
         let program_id = tx.message.account_keys[pidx];
         println!("program_id = {:?}", program_id);
-        let mut child = Command::new(format!("./solana_smart_contract_bin/{:?}", program_id))
-            .stdin(Stdio::piped())
-            .spawn()
-            .unwrap();
+        let mut child = create_child_process(&program_id);
         let child_stdin = child.stdin.as_mut().unwrap();
 
         child_stdin.write_all(b"Header: External CPI").unwrap();
         child_stdin.write_all(b"\n").unwrap();
-
         child_stdin.write_all(msg_sender.as_bytes()).unwrap();
         child_stdin.write_all(b"\n").unwrap();
         child_stdin.write_all(&encoded64).unwrap();

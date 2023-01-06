@@ -6,9 +6,10 @@ use std::{
 };
 
 use cartesi_solana::{
-    account_manager::create_account_manager, adapter::eth_address_to_pubkey, anchor_lang,
-    anchor_spl::token::TokenAccount, owner_manager,
+    account_manager::create_account_manager, adapter::eth_address_to_pubkey,
+    owner_manager,
 };
+use anchor_spl::token::TokenAccount;
 use solana_adapter::deposit::{self};
 use solana_program::account_info::AccountInfo;
 
@@ -27,11 +28,10 @@ fn setup() {
     println!("{}", final_temp_dir);
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
-    deposit::only_accepts_deposits_from_address("0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string());
-    unsafe {
-        owner_manager::POINTERS.clear();
-        owner_manager::OWNERS.clear();
-    }
+    deposit::only_accepts_deposits_from_address(
+        "0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string(),
+    );
+    owner_manager::clear();
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn it_should_create_and_add_to_a_token_account() {
 
     // second deposit
     deposit::process(payload, msg_sender, timestamp);
-    
+
     let account_manager = create_account_manager();
     let account_info_data = account_manager.read_account(&pubkey).unwrap();
     let mut lamports = account_info_data.lamports;
@@ -103,6 +103,6 @@ fn it_should_create_and_add_to_a_token_account() {
     let eth_address = hex::decode("67d269191c92caf3cd7723f116c85e6e9bf55933").unwrap();
     let mint = eth_address_to_pubkey(&eth_address);
     assert_eq!(token_account.owner.to_string(), depositor);
-    assert_eq!(token_account.amount, 1234*2);
+    assert_eq!(token_account.amount, 1234 * 2);
     assert_eq!(token_account.mint, mint);
 }

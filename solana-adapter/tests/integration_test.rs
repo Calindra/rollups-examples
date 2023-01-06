@@ -20,10 +20,7 @@ fn setup() {
     fs::create_dir(&final_temp_dir).unwrap();
     std::env::set_var("SOLANA_DATA_PATH", final_temp_dir);
     deposit::only_accepts_deposits_from_address("0xf8c694fd58360de278d5ff2276b7130bfdc0192a".to_string());
-    unsafe {
-        owner_manager::POINTERS.clear();
-        owner_manager::OWNERS.clear();
-    }
+    owner_manager::clear();
 }
 
 #[test]
