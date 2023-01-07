@@ -16,7 +16,7 @@ pub fn entry(
         panic!("Wrong program id");
     }
     let instruction: Instruction = bincode::deserialize(&data[..4]).unwrap();
-    msg!("instruction.code = {}", instruction.code);
+    msg!("Base SPL Instruction.code = {}", instruction.code);
     if instruction.code == 0 {
         let create: Create = bincode::deserialize(data).unwrap();
         let from = &accounts[0];

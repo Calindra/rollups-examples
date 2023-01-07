@@ -14,4 +14,4 @@
 set -e
 export SOLANA_BIN_PATH=solana_programs_riscv
 export SOLANA_DATA_PATH=account_info_data
-rollup-init ./target/riscv64ima-cartesi-linux-gnu/release/solana_adapter
+rollup-init ./solana_adapter

@@ -80,7 +80,7 @@ pub fn call_smart_contract(
     for tx_instruction in &tx.message.instructions {
         let pidx: usize = (tx_instruction.program_id_index).into();
         let program_id = tx.message.account_keys[pidx];
-        println!("program_id = {:?}", program_id);
+        println!("CTSI Solana Adapter calling program_id = {:?}", program_id);
         let mut child = create_child_process(&program_id);
         let child_stdin = child.stdin.as_mut().unwrap();
 
