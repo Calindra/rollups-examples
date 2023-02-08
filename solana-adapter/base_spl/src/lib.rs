@@ -1,8 +1,8 @@
-use anchor_lang::{prelude::{Pubkey, AccountInfo}, solana_program::msg};
-use cartesi_solana::{
-    account_manager,
-    owner_manager,
+use anchor_lang::{
+    prelude::{AccountInfo, Pubkey},
+    solana_program::msg,
 };
+use cartesi_solana::{account_manager, owner_manager};
 use serde::{Deserialize, Serialize};
 
 const AIRDROP_PUBKEY: &str = "9B5XszUGdMaxCZ7uSQhPzdks5ZQSmWxrmzCSvtJ6Ns6g";
@@ -21,8 +21,7 @@ pub fn entry(
         let create: Create = bincode::deserialize(data).unwrap();
         let from = &accounts[0];
         let account = &accounts[1];
-        **from.try_borrow_mut_lamports()? -= create.lamports;
-        **account.try_borrow_mut_lamports()? += create.lamports;
+        transfer_lamports(from, account, create.lamports)?;
         account_manager::set_data_size(account, create.space.try_into().unwrap());
         println!(
             "create account {:?} with owner {:?}",
@@ -47,8 +46,7 @@ pub fn entry(
         if !from.is_signer && from.key.to_string() != AIRDROP_PUBKEY {
             panic!("Not signed transfer");
         }
-        **from.try_borrow_mut_lamports()? -= transfer.lamports;
-        **to.try_borrow_mut_lamports()? += transfer.lamports;
+        transfer_lamports(from, to, transfer.lamports)?;
     } else if instruction.code == 8 {
         let allocate: Allocate =
             bincode::deserialize(data).expect("Deserialize Allocate instruction error");
@@ -57,6 +55,19 @@ pub fn entry(
     } else {
         panic!("Instruction code {} not implemented", instruction.code);
     }
+    Ok(())
+}
+
+fn transfer_lamports(
+    from: &AccountInfo,
+    to: &AccountInfo,
+    lamports: u64,
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    **from.try_borrow_mut_lamports()? = from
+        .lamports()
+        .checked_sub(lamports)
+        .expect("Underflow error");
+    **to.try_borrow_mut_lamports()? = to.lamports().checked_add(lamports).expect("Overflow error");
     Ok(())
 }
 
@@ -90,4 +101,109 @@ pub struct Allocate {
 pub struct Assing {
     instruction: u32,
     program_id: Pubkey,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic(expected = "Underflow error")]
+    fn it_should_check_underflow() {
+        let mut data = vec![];
+        let mut data_to = vec![];
+        let key = Pubkey::default();
+        let owner = Pubkey::default();
+        let mut lamports_from = 0;
+        let mut lamports_to = 0;
+
+        let from = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_from,
+            &mut data,
+            &owner,
+            false,
+            0,
+        );
+        let to = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_to,
+            &mut data_to,
+            &owner,
+            false,
+            0,
+        );
+        transfer_lamports(&from, &to, 1).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow error")]
+    fn it_should_check_overflow() {
+        let mut data = vec![];
+        let mut data_to = vec![];
+        let key = Pubkey::default();
+        let owner = Pubkey::default();
+        let mut lamports_from = 1;
+        let mut lamports_to = u64::MAX;
+
+        let from = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_from,
+            &mut data,
+            &owner,
+            false,
+            0,
+        );
+        let to = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_to,
+            &mut data_to,
+            &owner,
+            false,
+            0,
+        );
+        transfer_lamports(&from, &to, 1).unwrap();
+    }
+
+    #[test]
+    fn it_should_transfer() {
+        let mut data = vec![];
+        let mut data_to = vec![];
+        let key = Pubkey::default();
+        let owner = Pubkey::default();
+        let mut lamports_from = 7;
+        let mut lamports_to = 3;
+
+        let from = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_from,
+            &mut data,
+            &owner,
+            false,
+            0,
+        );
+        let to = AccountInfo::new(
+            &key,
+            true,
+            true,
+            &mut lamports_to,
+            &mut data_to,
+            &owner,
+            false,
+            0,
+        );
+        transfer_lamports(&from, &to, 5).unwrap();
+        assert_eq!(lamports_from, 2);
+        assert_eq!(lamports_to, 8);
+    }
 }
