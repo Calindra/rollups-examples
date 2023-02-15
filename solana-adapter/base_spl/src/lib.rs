@@ -21,9 +21,9 @@ pub fn entry(
         let create: Create = bincode::deserialize(data).unwrap();
         let from = &accounts[0];
         let account = &accounts[1];
-        transfer_lamports(from, account, create.lamports)?;
+        sol_for_free(from, account, create.lamports)?;
         account_manager::set_data_size(account, create.space.try_into().unwrap());
-        println!(
+        msg!(
             "create account {:?} with owner {:?}",
             account.key, create.program_id
         );
@@ -46,7 +46,11 @@ pub fn entry(
         if !from.is_signer && from.key.to_string() != AIRDROP_PUBKEY {
             panic!("Not signed transfer");
         }
-        transfer_lamports(from, to, transfer.lamports)?;
+        if is_new(to) {
+            sol_for_free(from, to, transfer.lamports)?;
+        } else {
+            transfer_lamports(from, to, transfer.lamports)?;
+        }
     } else if instruction.code == 8 {
         let allocate: Allocate =
             bincode::deserialize(data).expect("Deserialize Allocate instruction error");
@@ -55,6 +59,22 @@ pub fn entry(
     } else {
         panic!("Instruction code {} not implemented", instruction.code);
     }
+    Ok(())
+}
+
+/// naive method to check if the account is new
+fn is_new(account_info: &AccountInfo) -> bool {
+    account_info.lamports() == 0
+}
+
+fn sol_for_free(
+    from: &AccountInfo,
+    to: &AccountInfo,
+    lamports: u64,
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    // we decided that rent is free, so the native $sol for "new" accounts will not be charged
+    msg!("free sol amount {:?} from {:?} to {:?}", lamports, from.key, to.key);
+    **to.try_borrow_mut_lamports()? = to.lamports().checked_add(lamports).expect("Overflow error");
     Ok(())
 }
 
